@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import json
+import os
 import secrets
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+import httpx
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -15,23 +19,58 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from . import ics, insights, recipes
+from . import account, connectors, ics, insights, recipes
 from .api_models import (AuthResponse, LoginRequest, OnboardingRequest, SignupRequest,
                          SnapshotModel)
-from .db import ActivityLog, ProfileRow, Record, SessionToken, User, get_session, utcnow
+from .db import ActivityLog, Connector, ProfileRow, Record, SessionToken, User, get_session, utcnow
 from .plan import build_plan, build_reminders, build_workout_days
-from .providers import LocalProvider, Provider, configured_providers, get_provider
+from .providers import PROVIDER_CLASSES, LocalProvider, Provider, configured_providers, get_provider
 from .schemas import AssistRequest, AssistResponse, UserContext
-from .security import (create_session, current_user, bearer, hash_password, login_limiter,
+from .security import (RateLimiter, create_session, current_user, bearer, hash_password, login_limiter,
                        revoke_session, verify_password)
 from .service import assist
 from .state import load_snapshot, merge_snapshot
 
-app = FastAPI(title="Pulse API", version="0.2.0")
+app = FastAPI(title="Pulse API", version="0.3.0")
+app.include_router(connectors.router)
+app.include_router(account.router)
+
+CSP = ("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+       "font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; "
+       "base-uri 'none'; form-action 'self'; object-src 'none'")
+MAX_BODY = 1_000_000
 
 
-def provider_dependency() -> Provider:
-    return get_provider()
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    """Strict headers on everything, and no caching of API responses (they hold personal data)."""
+    length = request.headers.get("content-length")
+    if length and length.isdigit() and int(length) > MAX_BODY:
+        return Response("Request too large", status_code=413)
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = CSP
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "microphone=(self), camera=(), geolocation=()"
+    if request.url.path.startswith("/v1/"):
+        response.headers["Cache-Control"] = "no-store"
+    if request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https":
+        response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
+    return response
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
+    """FastAPI's default error repeats the submitted value. That would echo API keys and passwords back,
+    so report only which field is wrong and why."""
+    errors = [{"loc": [str(p) for p in e.get("loc", []) if p != "body"], "msg": e.get("msg", "Invalid value"),
+               "type": e.get("type", "value_error")} for e in exc.errors()]
+    return JSONResponse(status_code=422, content={"detail": errors})
+
+
+def provider_dependency(client: httpx.AsyncClient = Depends(connectors.http_client)) -> Provider:
+    return get_provider(client=client)
 
 
 @app.get("/healthz")
@@ -56,7 +95,7 @@ def signup(body: SignupRequest, request: Request, db: Session = Depends(get_sess
     except IntegrityError:
         db.rollback()
         raise HTTPException(409, "An account with this email already exists")
-    return AuthResponse(token=create_session(db, user.id), user_id=user.id, email=user.email, name=user.name)
+    return AuthResponse(token=create_session(db, user.id, request.headers.get("user-agent")), user_id=user.id, email=user.email, name=user.name)
 
 
 @app.post("/v1/auth/login", response_model=AuthResponse)
@@ -66,7 +105,7 @@ def login(body: LoginRequest, request: Request, db: Session = Depends(get_sessio
     # Same error for unknown email and wrong password, so accounts can't be probed.
     if user is None or not verify_password(body.password, user.password_hash):
         raise HTTPException(401, "Incorrect email or password")
-    return AuthResponse(token=create_session(db, user.id), user_id=user.id, email=user.email, name=user.name)
+    return AuthResponse(token=create_session(db, user.id, request.headers.get("user-agent")), user_id=user.id, email=user.email, name=user.name)
 
 
 @app.post("/v1/auth/logout", status_code=204)
@@ -85,7 +124,7 @@ def me(user: User = Depends(current_user)) -> dict:
 @app.delete("/v1/account", status_code=204)
 def delete_account(user: User = Depends(current_user), db: Session = Depends(get_session)) -> Response:
     """Permanently deletes the account and every record, session and log."""
-    for table in (ActivityLog, Record, ProfileRow, SessionToken):
+    for table in (ActivityLog, Record, ProfileRow, SessionToken, Connector):
         db.execute(delete(table).where(table.user_id == user.id))
     db.execute(delete(User).where(User.id == user.id))
     db.commit()
@@ -100,6 +139,9 @@ def export(user: User = Depends(current_user), db: Session = Depends(get_session
         "account": {"email": user.email, "name": user.name, "createdAt": user.created_at.isoformat()},
         "data": load_snapshot(db, user.id),
         "activityLog": [{"kind": l.kind, "day": l.day, "label": l.label, "value": l.value} for l in logs],
+        # Which providers you connected. The keys themselves are never exported, by design.
+        "aiConnectors": [{"provider": c.provider, "last4": c.last4, "addedAt": c.created_at.isoformat()}
+                         for c in db.scalars(select(Connector).where(Connector.user_id == user.id))],
     }
     return Response(json.dumps(body, indent=2), media_type="application/json",
                     headers={"Content-Disposition": 'attachment; filename="pulse-export.json"'})
@@ -247,10 +289,27 @@ def providers(user: User = Depends(current_user), db: Session = Depends(get_sess
     return {"available": available, "chosen": chosen, "active": active}
 
 
+assist_limiter = RateLimiter(attempts=30, window_seconds=60)
+SERVER_KEY_DAILY_LIMIT = int(os.environ.get("PULSE_SERVER_KEY_DAILY_LIMIT", "200"))
+_daily_use: dict[str, tuple[str, int]] = {}
+
+
+def _over_daily_limit(user_id: str) -> bool:
+    """Requests that use the server's own key are capped per user per day, to protect its cost."""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    day, count = _daily_use.get(user_id, (today, 0))
+    if day != today:
+        count = 0
+    _daily_use[user_id] = (today, count + 1)
+    return count + 1 > SERVER_KEY_DAILY_LIMIT
+
+
 @app.post("/v1/assist", response_model=AssistResponse)
 async def assist_endpoint(req: AssistRequest, user: User = Depends(current_user),
                           db: Session = Depends(get_session),
-                          provider: Provider = Depends(provider_dependency)) -> AssistResponse:
+                          provider: Provider = Depends(provider_dependency),
+                          client: httpx.AsyncClient = Depends(connectors.http_client)) -> AssistResponse:
+    assist_limiter.check(user.id)
     snapshot = load_snapshot(db, user.id)
     profile = snapshot["profile"]
     tz = profile["timezone"]
@@ -261,15 +320,38 @@ async def assist_endpoint(req: AssistRequest, user: User = Depends(current_user)
         calorie_goal=profile["calorieGoal"], calories_eaten=sum(m["calories"] for m in todays),
         protein_goal=profile["proteinGoal"], protein_eaten=sum(m["protein"] for m in todays),
         diet=profile["diet"], workout_today=_todays_workout(snapshot["plan"], tz))
+
     chosen = profile.get("aiProvider", "")
-    if chosen in configured_providers() and isinstance(provider, type(get_provider())):
-        provider = get_provider(chosen)   # the user's own pick, when the server has its key
+    notice = None
+    own = connectors.resolve_own_provider(db, user, chosen, client)
+    if own:
+        provider = own.provider                      # the user's own key always wins
+    else:
+        is_default = type(provider) in (LocalProvider, *PROVIDER_CLASSES.values())
+        if is_default and chosen in configured_providers():
+            provider = get_provider(chosen, client)  # the user's pick, when the server has that key
+        if provider.name != "local" and _over_daily_limit(user.id):
+            provider = LocalProvider()
+            notice = "You've reached today's limit for the shared assistant. Add your own API key in Profile to keep going."
+
     try:
-        return await assist(req, provider)
+        result = await assist(req, provider)
+        if own:
+            connectors.mark_used(db, own.row)
+            result.provider = f"{own.row.provider} (your key)"
+    except httpx.HTTPStatusError as exc:
+        result = await assist(req, LocalProvider())
+        result.provider = "local (fallback)"
+        if own and exc.response.status_code in (401, 403):
+            connectors.mark_rejected(db, own.row)
+            notice = f"Your {own.row.provider} key was rejected, so Pulse used the built-in parser. Update the key in Profile."
+        elif own and exc.response.status_code == 429:
+            notice = "Your AI provider is rate limiting you right now, so Pulse used the built-in parser."
     except Exception as exc:  # provider outage: degrade to the rule-based parser
-        fallback = await assist(req, LocalProvider())
-        fallback.provider = f"local (fallback after {type(exc).__name__})"
-        return fallback
+        result = await assist(req, LocalProvider())
+        result.provider = f"local (fallback after {type(exc).__name__})"
+    result.notice = notice
+    return result
 
 
 def _day(iso: str, tz: str) -> str:

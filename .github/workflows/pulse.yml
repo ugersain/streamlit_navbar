@@ -36,7 +36,9 @@ jobs:
       - name: Start the server
         working-directory: pulse/backend
         run: |
-          DATABASE_URL=sqlite:////tmp/e2e.db nohup python -m uvicorn app.main:app --port 8000 > /tmp/server.log 2>&1 &
+          export DATABASE_URL=sqlite:////tmp/e2e.db PULSE_ENV=test PULSE_FAKE_PROVIDER_URL=http://127.0.0.1:9911
+          export PULSE_ENCRYPTION_KEYS=$(python -m app.crypto)
+          nohup python -m uvicorn app.main:app --port 8000 > /tmp/server.log 2>&1 &
           for i in $(seq 1 30); do curl -sf localhost:8000/healthz && break; sleep 1; done
       - name: Run the browser tests
         working-directory: pulse/web

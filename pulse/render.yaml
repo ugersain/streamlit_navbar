@@ -14,6 +14,8 @@ services:
         value: anthropic            # or openai / gemini, or remove for the built-in parser
       - key: ANTHROPIC_API_KEY
         sync: false                 # you enter this in the dashboard; it is never committed
+      - key: PULSE_ENCRYPTION_KEYS
+        sync: false                 # REQUIRED for "bring your own key". Generate: python -m app.crypto
 databases:
   - name: pulse-db
     plan: free

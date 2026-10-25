@@ -8,11 +8,12 @@ import { insights } from './views/insights.js';
 import { nutrition } from './views/nutrition.js';
 import { workouts } from './views/workouts.js';
 import { routines } from './views/routines.js';
-import { settings } from './views/settings.js';
+import { profile } from './views/profile.js';
+import { connectorsView } from './views/connectors.js';
 import './views/assistant.js';
 import { html } from './ui.js';
 
-const routes = { login, signup, onboarding, plan, dashboard, planner, insights, nutrition, workouts, routines, settings };
+const routes = { login, signup, onboarding, plan, dashboard, planner, insights, nutrition, workouts, routines, profile, connectors: connectorsView };
 const PUBLIC = ['login', 'signup'];
 const app = document.getElementById('app');
 let current = null;
@@ -42,13 +43,15 @@ async function navigate() {
   const name = routeName();
   const wanted = (location.hash.replace(/^#\//, '').split('?')[0]) || 'dashboard';
   if (wanted !== name) { location.hash = `#/${name}`; return; }
-  current = name;
   const view = routes[name];
+  current = null;   // nothing may redraw while this page's data is still loading
   if (view.load) {
     app.innerHTML = '<p class="muted" style="padding:40px" role="status">Loading…</p>';
     try { await view.load(); } catch (e) { if (e.status === 401) { location.hash = '#/login'; return; } app.innerHTML = `<p class="err" style="padding:40px" role="alert">${e.message}</p>`; return; }
   }
-  if (current === name) draw();
+  if (routeName() !== name) return;   // the user moved on while we were loading
+  current = name;
+  draw();
   window.scrollTo(0, 0);
 }
 

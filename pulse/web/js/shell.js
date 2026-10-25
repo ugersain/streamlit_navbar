@@ -2,7 +2,7 @@ import { html, raw, esc } from './ui.js';
 import { S, initials } from './store.js';
 
 const NAV = [['dashboard', 'Dashboard'], ['planner', 'Planner'], ['insights', 'Insights'],
-  ['nutrition', 'Nutrition'], ['workouts', 'Workouts'], ['routines', 'Routines'], ['settings', 'Settings']];
+  ['nutrition', 'Nutrition'], ['workouts', 'Workouts'], ['routines', 'Routines'], ['profile', 'Profile']];
 
 export const logo = (size = 28) => raw(`<svg width="${size}" height="${size}" viewBox="0 0 28 28" aria-hidden="true"><g fill="none" stroke-width="3.5" stroke-linecap="round" transform="rotate(-90 14 14)"><circle cx="14" cy="14" r="11" stroke="#FF8A4C" stroke-dasharray="44 70"/><circle cx="14" cy="14" r="5.5" stroke="#C8F25A" stroke-dasharray="22 35"/></g></svg>`);
 

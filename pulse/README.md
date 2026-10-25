@@ -19,7 +19,9 @@ pulse/
 
 | Area | State | How it is tested |
 | --- | --- | --- |
-| Accounts: sign up, log in, log out, delete account, data export | Done | 77 API tests + browser tests |
+| Accounts: sign up, log in, log out, change email and password, devices, delete account, data export | Done | API tests + browser tests |
+| **Profile page** (account, body and goals, weight log, food, notifications, devices, privacy) | Done | Browser tests |
+| **Bring your own AI key** (Claude, OpenAI, Gemini), encrypted, never shown again, see `SECURITY.md` | Done | 60+ security tests + browser tests |
 | Cloud sync (newer settings win, meals merge, deletes stick) | Done | API tests, including same-second edits and stale devices |
 | Plan builder, workout split, routine from onboarding answers | Done | Unit + API tests |
 | Voice/text food logging (AI reads what you said, a database supplies the numbers) | Done | Parser and provider tests; Claude, OpenAI and Gemini adapters tested against mock servers |
@@ -39,7 +41,10 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 python -m pytest -q                           # backend tests
 
-# optional: a real AI provider. Without a key the built-in parser answers.
+# needed for users to save their own AI keys (generate once, keep it safe, back it up):
+export PULSE_ENCRYPTION_KEYS=$(python -m app.crypto)
+
+# optional: a shared server-side AI key for users who have not added their own
 export PULSE_PROVIDER=anthropic ANTHROPIC_API_KEY=...     # or openai / gemini
 uvicorn app.main:app --port 8000
 ```
@@ -52,6 +57,9 @@ Browser tests (needs the server running and `npm i playwright`):
 cd pulse/web && node e2e/e2e.cjs
 ```
 
+The browser test needs the server started in test mode so it can talk to a stand-in AI provider:
+`PULSE_ENV=test PULSE_FAKE_PROVIDER_URL=http://127.0.0.1:9911 PULSE_ENCRYPTION_KEYS=$(python -m app.crypto) uvicorn app.main:app --port 8000`.
+
 ## Deploy
 
 `render.yaml` is a Render blueprint (web service from the Dockerfile plus a free Postgres). Or:
@@ -62,7 +70,8 @@ docker run -p 8000:8000 -e DATABASE_URL=postgresql://... -e PULSE_PROVIDER=anthr
 ```
 
 Set `DATABASE_URL` to Postgres for anything real: SQLite on a host with a temporary disk loses data on restart.
-API keys live only on the server, never in the apps or the web page.
+`PULSE_ENCRYPTION_KEYS` is required for the connect-your-own-key feature. Without it the server refuses to store keys.
+Read `SECURITY.md` before going live. API keys live only on the server, never in the apps or the web page.
 
 ## Build the apps (on a Mac)
 

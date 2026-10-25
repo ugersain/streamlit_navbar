@@ -133,3 +133,78 @@ final class TombstoneTests: XCTestCase {
         XCTAssertTrue(store.snapshot.deletedIds.isEmpty)
     }
 }
+
+
+/// Stands in for the network so we can check exactly what the app sends when saving an API key.
+final class StubURLProtocol: URLProtocol {
+    static var handler: ((URLRequest) -> (Int, Data))?
+    static var lastRequest: URLRequest?
+    static var lastBody: Data?
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() {
+        Self.lastRequest = request
+        if let stream = request.httpBodyStream {
+            stream.open(); defer { stream.close() }
+            var data = Data(); var buffer = [UInt8](repeating: 0, count: 1024)
+            while stream.hasBytesAvailable { let n = stream.read(&buffer, maxLength: buffer.count); if n <= 0 { break }; data.append(buffer, count: n) }
+            Self.lastBody = data
+        } else { Self.lastBody = request.httpBody }
+        let (status, data) = Self.handler?(request) ?? (500, Data())
+        client?.urlProtocol(self, didReceive: HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: data)
+        client?.urlProtocolDidFinishLoading(self)
+    }
+    override func stopLoading() {}
+}
+
+final class ConnectorClientTests: XCTestCase {
+    private let client = CloudClient(baseURL: URL(string: "https://pulse.example.com")!, token: "session-token")
+
+    override func setUp() { URLProtocol.registerClass(StubURLProtocol.self) }
+    override func tearDown() { URLProtocol.unregisterClass(StubURLProtocol.self); StubURLProtocol.handler = nil }
+
+    func testSavingAKeySendsItOnceOverTheSessionAndOnlyKeepsTheLastFour() async throws {
+        StubURLProtocol.handler = { _ in
+            (200, Data(#"{"provider":"anthropic","last4":"1234","status":"ok","createdAt":"2026-10-26T10:00:00+00:00","lastUsedAt":null}"#.utf8))
+        }
+        let info = try await client.saveKey(provider: "anthropic", key: "sk-ant-api03-SECRETSECRETSECRET1234", password: "my password")
+        XCTAssertEqual(info.last4, "1234")
+        let request = try XCTUnwrap(StubURLProtocol.lastRequest)
+        XCTAssertEqual(request.httpMethod, "PUT")
+        XCTAssertEqual(request.url?.path, "/v1/connectors/anthropic")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer session-token")
+        let body = try XCTUnwrap(JSONSerialization.jsonObject(with: try XCTUnwrap(StubURLProtocol.lastBody)) as? [String: String])
+        XCTAssertEqual(body["apiKey"], "sk-ant-api03-SECRETSECRETSECRET1234")
+        XCTAssertEqual(body["password"], "my password")
+    }
+
+    func testServerErrorsReachTheUserWithoutTheKey() async {
+        StubURLProtocol.handler = { _ in (422, Data(#"{"detail":"Claude rejected this key."}"#.utf8)) }
+        do {
+            _ = try await client.saveKey(provider: "anthropic", key: "sk-ant-api03-SECRETSECRETSECRET1234", password: "pw")
+            XCTFail("should have thrown")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "Claude rejected this key.")
+            XCTAssertFalse(error.localizedDescription.contains("SECRET"))
+        }
+    }
+
+    func testConnectorListDecodesAndHasNoPlaceToHoldAKey() throws {
+        let json = #"{"encryptionAvailable":true,"providers":[{"id":"anthropic","name":"Claude (Anthropic)","hint":"Starts with sk-ant-"}],"connectors":[{"provider":"anthropic","last4":"1234","status":"ok","createdAt":"x","lastUsedAt":null}]}"#
+        let list = try JSONDecoder().decode(ConnectorList.self, from: Data(json.utf8))
+        XCTAssertTrue(list.encryptionAvailable)
+        XCTAssertEqual(list.connectors.first?.last4, "1234")
+        // ConnectorInfo has only provider, last4, status and dates, so a key can never be stored in it.
+        XCTAssertEqual(Mirror(reflecting: list.connectors[0]).children.compactMap(\.label).sorted(),
+                       ["createdAt", "last4", "lastUsedAt", "provider", "status"])
+    }
+
+    func testRemovingAKeySendsThePassword() async throws {
+        StubURLProtocol.handler = { _ in (204, Data()) }
+        try await client.removeKey(provider: "openai", password: "pw")
+        XCTAssertEqual(StubURLProtocol.lastRequest?.url?.path, "/v1/connectors/openai/remove")
+        XCTAssertEqual(StubURLProtocol.lastRequest?.httpMethod, "POST")
+    }
+}

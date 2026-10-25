@@ -28,6 +28,12 @@ struct WatchHomeView: View {
         }
         .navigationTitle("Pulse")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink { WatchProfileView() } label: { Image(systemName: "person.crop.circle") }
+                    .accessibilityLabel("Profile")
+            }
+        }
         .task { await health.refresh() }
     }
 

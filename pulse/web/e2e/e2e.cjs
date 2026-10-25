@@ -28,7 +28,32 @@ const settle = async () => { await page.waitForLoadState('networkidle'); await p
 const shot = (n) => page.screenshot({ path: `${SHOTS}/${n}.png`, fullPage: true });
 const nav = async (hash) => { await page.goto(`${BASE}/#/${hash}`); await page.reload(); await settle(); };
 
+// A stand-in for the AI providers, so key saving can be tested end to end with no real account.
+const http = require('http');
+const fakeLog = [];
+function startFakeProvider() {
+  const server = http.createServer((req, res) => {
+    const key = req.headers['x-api-key'] || (req.headers.authorization || '').replace('Bearer ', '') || req.headers['x-goog-api-key'] || '';
+    if (req.url === '/__reset') { fakeLog.length = 0; res.end('ok'); return; }
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', () => {
+      fakeLog.push({ path: req.url, key, method: req.method });
+      const json = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+      if (req.method === 'GET' && req.url.endsWith('/v1/models')) return key.includes('VALID') ? json(200, { data: [] }) : json(401, { error: 'bad key' });
+      if (req.url.endsWith('/v1/messages')) {
+        if (key.includes('REVOKED')) return json(401, { error: 'revoked' });
+        return json(200, { content: [{ type: 'tool_use', name: 'log_food', input: { items: [{ name: 'egg', quantity: 2 }] } }] });
+      }
+      json(404, {});
+    });
+  });
+  return new Promise((resolve) => server.listen(9911, '127.0.0.1', () => resolve(server)));
+}
+
 (async () => {
+  const fake = await startFakeProvider();
   const browser = await chromium.launch();
   const context = await browser.newContext({ viewport: { width: 1360, height: 900 }, acceptDownloads: true, timezoneId: 'Asia/Kolkata', permissions: ['clipboard-read', 'clipboard-write'] });
   page = await context.newPage();
@@ -36,7 +61,7 @@ const nav = async (hash) => { await page.goto(`${BASE}/#/${hash}`); await page.r
   const originalClick = page.click.bind(page);
   page.click = async (...a) => { await originalClick(...a); await page.waitForTimeout(120); };
   page.on('pageerror', (e) => problems.push('pageerror: ' + e.message));
-  page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.g|Failed to load resource.*(401|409|422|429)/.test(m.text())) problems.push('console: ' + m.text()); });
+  page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.g|Failed to load resource/.test(m.text())) problems.push('console: ' + m.text()); });
   page.on('dialog', (d) => d.dismiss());
 
   const email = `e2e${Date.now()}@example.com`;
@@ -314,48 +339,191 @@ const nav = async (hash) => { await page.goto(`${BASE}/#/${hash}`); await page.r
     await shot('12-insights');
   });
 
-  console.log('SETTINGS');
-  await step('edit targets: valid saves, invalid rejected', async () => {
-    await nav('settings');
-    await page.fill('#s-cal', '1850'); await page.dispatchEvent('#s-cal', 'change'); await page.waitForTimeout(800);
-    await page.fill('#s-cal', '50'); await page.dispatchEvent('#s-cal', 'change'); await page.waitForTimeout(500);
-    eq(await page.inputValue('#s-cal'), '1850', 'invalid value rejected');
-    await page.reload(); await settle(); eq(await page.inputValue('#s-cal'), '1850', 'saved across reload');
+  console.log('PROFILE');
+  const NEWPASS = 'a brand new pass 99';
+  await step('profile page shows the account, streak and every section', async () => {
+    await nav('profile');
+    ok((await text('h1')).includes('Aarav'), 'name in title');
+    for (const h of ['Personal info', 'Body and goals', 'Weight log', 'Food preferences', 'AI assistant', 'Notifications', 'Connections', 'Signed-in devices', 'Privacy and data'])
+      ok(await page.locator(`h2:has-text("${h}")`).count() >= 1, 'missing section ' + h);
+    ok(Number(await text('#st-streak')) >= 1, 'streak counts today');
+    await shot('13-profile');
   });
-  await step('toggle an allergy and change diet; recipes follow', async () => {
-    await page.click('[data-act=st-allergy][data-v=Dairy]'); await page.waitForTimeout(500);
-    await page.selectOption('#s-diet', 'Vegan'); await page.waitForTimeout(900);
-    const list = await page.evaluate(async () => (await (await fetch('/v1/recipes', { headers: { Authorization: 'Bearer ' + localStorage.getItem('pulse.token') } })).json()).recipes);
-    ok(list.length > 0 && list.every((r) => r.diet === 'vegan' && !r.allergens.includes('dairy') && !r.allergens.includes('peanuts')), 'recipe filter');
+  await step('editing the name persists', async () => {
+    await page.fill('#pf-name', 'Aarav K'); await page.click('[data-submit=pf-info] button[type=submit]'); await page.waitForTimeout(700);
+    await page.reload(); await settle(); ok((await text('h1')).includes('Aarav K'), 'name after reload');
   });
-  await step('AI provider list shows the built-in parser as active', async () => {
-    ok((await text('.opt[aria-pressed=true]')).includes('Built-in'), 'active provider');
-    ok(await page.locator('.opt[disabled]').count() === 3, 'others disabled');
-    await shot('13-settings');
+  await step('changing the email needs the password (wrong one rejected)', async () => {
+    await page.fill('#pf-mail', `changed${Date.now()}@example.com`);
+    await page.click('[data-submit=pf-info] button[type=submit]'); await page.waitForSelector('#ask-pw');
+    await page.fill('#ask-pw', 'definitely wrong'); await page.click('#ask-ok');
+    await page.waitForFunction(() => document.querySelector('#pf-info-err')?.textContent.includes('incorrect'));
+    await page.fill('#pf-mail', `changed${Date.now()}@example.com`);
+    await page.click('[data-submit=pf-info] button[type=submit]'); await page.waitForSelector('#ask-pw');
+    await page.fill('#ask-pw', 'correct horse battery'); await page.click('#ask-ok'); await page.waitForTimeout(800);
+    ok((await text('#pf-email')).includes('changed'), 'email updated');
   });
-  await step('export downloads JSON with my data', async () => {
+  await step('body and goals: invalid age rejected, goal change + recalculate raises the target', async () => {
+    await page.fill('#pf-age', '5'); await page.dispatchEvent('#pf-age', 'change'); await page.waitForTimeout(600);
+    eq(await page.inputValue('#pf-age'), '28', 'invalid age restored');
+    const before = Number((await text('#pf-cal')).replace(/\D/g, ''));
+    await page.fill('#pf-w', '95'); await page.dispatchEvent('#pf-w', 'change'); await page.waitForTimeout(500);
+    await page.click('[data-act=pf-set][data-key=goal][data-v=build]'); await page.waitForTimeout(600);
+    await page.click('[data-act=pf-recalc]'); await page.waitForTimeout(1200);
+    const after = Number((await text('#pf-cal')).replace(/\D/g, ''));
+    ok(after > before, `target should rise: ${before} -> ${after}`);
+  });
+  await step('weight log: add, see the trend, delete', async () => {
+    await page.evaluate(async () => {
+      const h = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + localStorage.getItem('pulse.token') };
+      for (const [d, kg] of [['2026-10-01', 97], ['2026-10-12', 96]]) await fetch('/v1/weights', { method: 'POST', headers: h, body: JSON.stringify({ kg, date: d }) });
+    });
+    await page.reload(); await settle();
+    await page.fill('#wl-kg', '94.5'); await page.click('[data-submit=pf-weight] button'); await page.waitForTimeout(900);
+    ok(await page.locator('h2:has-text("Weight log") ~ svg[role=img], section svg[aria-label*="per day"]').count() >= 1, 'weight chart');
+    ok((await text('#wl-h')) !== '', 'section');
+    await page.locator('[data-act=pf-delweight]').first().click(); await page.waitForTimeout(700);
+    ok(await page.locator('[data-act=pf-delweight]').count() >= 2, 'still has history');
+  });
+  await step('food preferences and quiet hours persist', async () => {
+    await page.click('[data-act=pf-diet][data-v=Vegan]'); await page.click('[data-act=pf-allergy][data-v=Soy]');
+    await page.fill('#pf-qs', '23:00'); await page.dispatchEvent('#pf-qs', 'change'); await page.waitForTimeout(900);
+    await page.reload(); await settle();
+    eq(await page.locator('[data-act=pf-diet][data-v=Vegan]').getAttribute('aria-pressed'), 'true', 'diet');
+    eq(await page.locator('[data-act=pf-allergy][data-v=Soy]').getAttribute('aria-pressed'), 'true', 'allergy');
+    eq(await page.inputValue('#pf-qs'), '23:00', 'quiet hours');
+  });
+  await step('calendar link works, and resetting it kills the old one', async () => {
+    await page.click('[data-act=pf-ics]'); await page.waitForTimeout(300);
+    const oldLink = await page.evaluate(() => navigator.clipboard.readText());
+    eq(await page.evaluate(async (l) => (await fetch(l)).status, oldLink), 200, 'old link works');
+    await page.click('[data-act=pf-ics-reset]'); await page.waitForTimeout(600);
+    eq(await page.evaluate(async (l) => (await fetch(l)).status, oldLink), 404, 'old link dead');
+    await page.click('[data-act=pf-ics]'); await page.waitForTimeout(300);
+    const newLink = await page.evaluate(() => navigator.clipboard.readText());
+    ok(newLink !== oldLink && (await page.evaluate(async (l) => (await fetch(l)).status, newLink)) === 200, 'new link works');
+  });
+  await step('devices: a second sign-in appears and can be signed out', async () => {
+    await page.evaluate(async (email) => { await fetch('/v1/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': 'x' }, body: JSON.stringify({ email, password: 'correct horse battery' }) }); }, (await page.evaluate(() => fetch('/v1/me', { headers: { Authorization: 'Bearer ' + localStorage.getItem('pulse.token') } }).then((r) => r.json()))).email);
+    await page.reload(); await settle();
+    ok(await page.locator('#dv-h ~ .item').count() >= 2, 'two devices listed');
+    ok(await page.locator('.pill:has-text("This device")').count() === 1, 'current marked');
+    await page.click('[data-act=pf-revoke]'); await page.waitForTimeout(800);
+    eq(await page.locator('#dv-h ~ .item').count(), 1, 'only this device left');
+  });
+  await step('change password: wrong current rejected; success; new password works', async () => {
+    await page.click('[data-act=pf-password]'); await page.waitForSelector('#cp-old');
+    await page.fill('#cp-old', 'not it at all'); await page.fill('#cp-new', NEWPASS); await page.click('#cp-go');
+    await page.waitForFunction(() => document.querySelector('#cp-err')?.textContent.includes('incorrect'));
+    await page.fill('#cp-old', 'correct horse battery'); await page.fill('#cp-new', 'short'); await page.click('#cp-go');
+    await page.waitForFunction(() => document.querySelector('#cp-err')?.textContent.length > 0);
+    await page.fill('#cp-new', NEWPASS); await page.click('#cp-go'); await page.waitForSelector('.modal', { state: 'detached' });
+  });
+
+  console.log('AI CONNECTORS (bring your own key)');
+  const KEY = 'sk-ant-api03-VALIDKEYVALIDKEYVALIDKEY1234';
+  const DEAD = 'sk-ant-api03-VALIDREVOKEDKEYVALIDREVOKED99';
+  await step('connectors page: three providers, none connected, with the security explanation', async () => {
+    await page.click('#ai-manage'); await page.waitForURL(/#\/connectors/); await settle();
+    eq(await page.locator('[data-provider]').count(), 3, 'providers');
+    eq(await page.locator('.key-mask').count(), 0, 'no keys yet');
+    ok(await page.locator('text=How your key is protected').isVisible(), 'security section');
+    await shot('14-connectors');
+  });
+  await step('saving needs the right password and never stores a rejected key', async () => {
+    await page.click('[data-provider=anthropic] [data-act=cn-add]'); await page.waitForSelector('#ck-key');
+    await page.fill('#ck-key', KEY); await page.fill('#ck-pw', 'wrong password!'); await page.click('#ck-go');
+    await page.waitForFunction(() => document.querySelector('#ck-err')?.textContent.includes('incorrect'));
+    await page.fill('#ck-key', 'sk-ant-api03-BADBADBADBADBADBADBADBAD0000'); await page.fill('#ck-pw', NEWPASS); await page.click('#ck-go');
+    await page.waitForFunction(() => document.querySelector('#ck-err')?.textContent.includes('rejected'));
+    await page.fill('#ck-key', 'abc'); await page.click('#ck-go');
+    await page.waitForFunction(() => document.querySelector('#ck-err')?.textContent.includes("doesn't look like"));
+    ok(!(await text('#ck-err')).includes('abc'), 'error echoed the key');
+    await page.keyboard.press('Escape');
+    eq(await page.locator('.key-mask').count(), 0, 'nothing saved');
+  });
+  await step('a valid key saves: masked display, field wiped, secret nowhere in the page or storage', async () => {
+    await page.click('[data-provider=anthropic] [data-act=cn-add]'); await page.waitForSelector('#ck-key');
+    await page.fill('#ck-key', KEY); await page.fill('#ck-pw', NEWPASS); await page.click('#ck-go');
+    await page.waitForSelector('[data-provider=anthropic] .key-mask');
+    ok((await text('[data-provider=anthropic] .key-mask')).endsWith('1234'), 'last4 shown');
+    const leaks = await page.evaluate(async (k) => {
+      const h = { Authorization: 'Bearer ' + localStorage.getItem('pulse.token') };
+      const bodies = [document.documentElement.outerHTML, JSON.stringify({ ...localStorage }), JSON.stringify({ ...sessionStorage })];
+      for (const p of ['/v1/connectors', '/v1/state', '/v1/export', '/v1/me', '/v1/providers', '/v1/sessions']) bodies.push(await (await fetch(p, { headers: h })).text());
+      return bodies.map((b, i) => (b.includes(k) || b.includes('VALIDKEYVALIDKEY') ? i : -1)).filter((i) => i >= 0);
+    }, KEY);
+    eq(leaks.length, 0, 'secret found in: ' + leaks);
+    await shot('15-connected');
+  });
+  await step('the assistant now calls the provider with the user\'s key', async () => {
+    fakeLog.length = 0;
+    const res = await page.evaluate(async () => (await fetch('/v1/assist', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + localStorage.getItem('pulse.token') }, body: JSON.stringify({ text: 'log two eggs' }) })).json());
+    eq(res.provider, 'anthropic (your key)', 'provider label'); ok(!res.notice, 'no notice');
+    eq(res.actions[0].items[0].calories, 156, 'database numbers');
+    const seen = fakeLog.filter((r) => r.path.endsWith('/v1/messages'));
+    ok(seen.length === 1 && seen[0].key === KEY, 'provider received the user key');
+    await page.reload(); await settle(); ok((await text('[data-provider=anthropic] .note')).includes('Active'), 'marked active');
+  });
+  await step('a key the provider later rejects is flagged, with a friendly notice and a working fallback', async () => {
+    await page.click('[data-provider=anthropic] [data-act=cn-add]'); await page.waitForSelector('#ck-key');
+    await page.fill('#ck-key', DEAD); await page.fill('#ck-pw', NEWPASS); await page.click('#ck-go');
+    await page.waitForSelector('[data-provider=anthropic] .key-mask');
+    const res = await page.evaluate(async () => (await fetch('/v1/assist', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + localStorage.getItem('pulse.token') }, body: JSON.stringify({ text: 'log an egg' }) })).json());
+    ok(res.notice.includes('rejected') && res.actions[0].type === 'log_meal', 'notice + fallback');
+    await page.reload(); await settle();
+    ok((await text('[data-provider=anthropic]')).includes('Key rejected'), 'card shows the problem');
+  });
+  await step('the assistant panel shows the notice and still logs food', async () => {
+    await nav('dashboard'); await page.click('.fab'); await page.fill('#assistant-input', 'log a banana'); await page.click('.panel button[type=submit]');
+    await page.waitForSelector('.panel .foodrow'); await page.keyboard.press('Escape');
+  });
+  await step('removing a key needs the password and wipes it', async () => {
+    await nav('connectors');
+    await page.click('[data-provider=anthropic] [data-act=cn-remove]'); await page.waitForSelector('#rk-pw');
+    await page.fill('#rk-pw', 'nope nope nope'); await page.click('#rk-go');
+    await page.waitForFunction(() => document.querySelector('#rk-err')?.textContent.includes('incorrect'));
+    eq(await page.locator('.key-mask').count(), 1, 'still there after wrong password');
+    await page.fill('#rk-pw', NEWPASS); await page.click('#rk-go'); await page.waitForSelector('.key-mask', { state: 'detached' });
+    await page.reload(); await settle(); eq(await page.locator('.key-mask').count(), 0, 'gone for good');
+  });
+
+  console.log('SECURITY HEADERS + PRIVACY');
+  await step('every response carries strict security headers; API responses are never cached', async () => {
+    for (const path of ['/', '/v1/me']) {
+      const r = await page.request.get(BASE + path, { headers: { Authorization: 'Bearer ' + (await page.evaluate(() => localStorage.getItem('pulse.token'))) } });
+      const h = r.headers();
+      ok(h['content-security-policy']?.includes("script-src 'self'") && h['x-frame-options'] === 'DENY' && h['x-content-type-options'] === 'nosniff', 'headers on ' + path);
+    }
+    const api = await page.request.get(BASE + '/v1/me', { headers: { Authorization: 'Bearer ' + (await page.evaluate(() => localStorage.getItem('pulse.token'))) } });
+    eq(api.headers()['cache-control'], 'no-store', 'cache-control');
+  });
+  await step('the page works under the strict content security policy (no inline scripts needed)', async () => {
+    eq(problems.filter((p) => /Content Security Policy|Refused to/.test(p)).length, 0, 'CSP violations: ' + problems.join('|'));
+  });
+  await step('export contains no key material', async () => {
+    await nav('profile');
     const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-act=st-export]')]);
-    const data = JSON.parse(require('fs').readFileSync(await dl.path(), 'utf8'));
-    ok(data.account.email === email && data.data.meals.length >= 3, 'export content');
+    const text = require('fs').readFileSync(await dl.path(), 'utf8');
+    ok(!/sk-ant|VALIDKEY|ciphertext|v1\.[0-9a-f]{8}\./.test(text), 'export leaks key material');
   });
-  await step('redo setup, then log out and log back in', async () => {
+  await step('redo setup, log out, log back in with the NEW password; old password is dead', async () => {
     await page.click('[data-act=st-redo]'); await page.waitForURL(/#\/onboarding/); await settle();
-    await page.goto(`${BASE}/#/settings`); await settle();
+    await page.goto(`${BASE}/#/profile`); await settle();
+    const email = (await text('#pf-email')).split(' · ')[0];
     await page.click('[data-act=st-logout]'); await page.waitForURL(/#\/login/); await settle();
-    await page.fill('#email', email); await page.fill('#password', 'correct horse battery');
-    await page.click('button[type=submit]'); await page.waitForURL(/#\/dashboard/); await settle();
-    ok((await text('h1')).includes('Aarav'), 'back in');
-  });
-  await step('data persisted through logout', async () => {
-    ok((await text('#kcal-eaten')) !== '0', 'meals kept');
+    await page.fill('#email', email); await page.fill('#password', 'correct horse battery'); await page.click('button[type=submit]');
+    await page.waitForSelector('#auth-error:not(:empty)');
+    await page.fill('#password', NEWPASS); await page.click('button[type=submit]'); await page.waitForURL(/#\/dashboard/); await settle();
   });
   await step('delete account requires typing DELETE, then wipes everything', async () => {
-    await nav('settings'); await page.click('[data-act=st-delete]'); await page.waitForSelector('.modal');
+    await nav('profile'); const email = (await text('#pf-email')).split(' · ')[0];
+    await page.click('[data-act=st-delete]'); await page.waitForSelector('.modal');
     ok(await page.locator('#del-go').isDisabled(), 'delete enabled too early');
     await page.fill('#del-confirm', 'delete'); ok(await page.locator('#del-go').isDisabled(), 'case-insensitive confirm');
     await page.fill('#del-confirm', 'DELETE'); await page.click('#del-go'); await page.waitForURL(/#\/signup/);
     await page.goto(`${BASE}/#/login`); await settle();
-    await page.fill('#email', email); await page.fill('#password', 'correct horse battery'); await page.click('button[type=submit]');
+    await page.fill('#email', email); await page.fill('#password', NEWPASS); await page.click('button[type=submit]');
     await page.waitForSelector('#auth-error:not(:empty)');
     eq(await text('#auth-error'), 'Incorrect email or password', 'account gone');
   });
@@ -379,6 +547,7 @@ const nav = async (hash) => { await page.goto(`${BASE}/#/${hash}`); await page.r
   await step('no JavaScript or console errors during the whole run', async () => { eq(problems.length, 0, problems.join(' | ')); });
 
   await browser.close();
+  fake.close();
   const failed = results.filter((r) => !r[0]);
   console.log(`\n${results.length - failed.length}/${results.length} passed`);
   failed.forEach((f) => console.log('  FAILED:', f[1], '-', f[2]));

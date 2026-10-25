@@ -86,7 +86,73 @@ struct CloudClient {
     }
 
     func deleteAccount() async throws { _ = try await send("DELETE", "v1/account") }
+
+    // MARK: Profile, devices and AI connectors
+
+    private func json(_ object: [String: Any]) throws -> Data { try JSONSerialization.data(withJSONObject: object) }
+
+    func stats() async throws -> ProfileStats {
+        try JSONDecoder().decode(ProfileStats.self, from: try await send("GET", "v1/profile/stats"))
+    }
+    func sessions() async throws -> [SessionInfo] {
+        struct Wrapper: Decodable { let sessions: [SessionInfo] }
+        return try JSONDecoder().decode(Wrapper.self, from: try await send("GET", "v1/sessions")).sessions
+    }
+    func revokeOtherSessions() async throws { _ = try await send("POST", "v1/sessions/revoke-others") }
+    func changePassword(current: String, new: String) async throws {
+        _ = try await send("POST", "v1/account/password", body: try json(["currentPassword": current, "newPassword": new]))
+    }
+    func updateAccount(name: String?, email: String?, currentPassword: String?) async throws {
+        var body: [String: Any] = [:]
+        if let name { body["name"] = name }
+        if let email { body["email"] = email }
+        if let currentPassword { body["currentPassword"] = currentPassword }
+        _ = try await send("PATCH", "v1/account", body: try json(body))
+    }
+    func rotateCalendar() async throws -> String {
+        struct Result: Decodable { let calendarToken: String }
+        return try JSONDecoder().decode(Result.self, from: try await send("POST", "v1/calendar/rotate")).calendarToken
+    }
+    func recalculatePlan() async throws -> Snapshot {
+        try JSONDecoder.pulse.decode(Snapshot.self, from: try await send("POST", "v1/plan/recalculate"))
+    }
+    func exportData() async throws -> Data { try await send("GET", "v1/export") }
+
+    func connectors() async throws -> ConnectorList {
+        try JSONDecoder().decode(ConnectorList.self, from: try await send("GET", "v1/connectors"))
+    }
+    /// The key travels once, over HTTPS, to be checked and stored encrypted. The app never keeps it.
+    func saveKey(provider: String, key: String, password: String) async throws -> ConnectorInfo {
+        let body = try json(["apiKey": key, "password": password])
+        return try JSONDecoder().decode(ConnectorInfo.self, from: try await send("PUT", "v1/connectors/\(provider)", body: body))
+    }
+    func removeKey(provider: String, password: String) async throws {
+        _ = try await send("POST", "v1/connectors/\(provider)/remove", body: try json(["password": password]))
+    }
 }
+
+struct ProviderInfo: Decodable, Identifiable, Hashable { let id: String; let name: String; let hint: String }
+struct ConnectorInfo: Decodable, Identifiable, Hashable {
+    let provider: String
+    let last4: String
+    let status: String
+    let createdAt: String
+    let lastUsedAt: String?
+    var id: String { provider }
+}
+struct ConnectorList: Decodable {
+    let encryptionAvailable: Bool
+    let providers: [ProviderInfo]
+    let connectors: [ConnectorInfo]
+}
+struct SessionInfo: Decodable, Identifiable {
+    let device: String
+    let current: Bool
+    let createdAt: String
+    let lastUsedAt: String?
+    var id: String { createdAt + device }
+}
+struct ProfileStats: Decodable { let streak: Int; let workouts: Int; let weightChangeKg: Double; let memberSince: String }
 
 /// Sign-in state and background sync with the server (iPhone only; the Watch syncs through the iPhone).
 @MainActor
@@ -123,6 +189,9 @@ final class CloudAccount: ObservableObject {
         let remote = try await CloudClient(baseURL: client.baseURL, token: result.token).state()
         if remote.profile.onboarded { store.adopt(remote) } else { await pushNow() }
     }
+
+    /// A client for the signed-in user, for screens that talk to the server directly.
+    var api: CloudClient? { client }
 
     func logout() { Keychain.set(nil, for: Self.tokenKey); UserDefaults.standard.removeObject(forKey: "pulse.email"); email = nil }
 

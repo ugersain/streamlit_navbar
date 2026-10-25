@@ -54,6 +54,20 @@ class SessionToken(Base):
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    device: Mapped[str] = mapped_column(String(120), default="")
+
+
+class Connector(Base):
+    """A user's own AI provider key. Only the encrypted form is stored; see crypto.py."""
+    __tablename__ = "connectors"
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    provider: Mapped[str] = mapped_column(String(20), primary_key=True)
+    ciphertext: Mapped[str] = mapped_column(String(1000))
+    last4: Mapped[str] = mapped_column(String(4))
+    status: Mapped[str] = mapped_column(String(12), default="ok")        # ok | rejected
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class ProfileRow(Base):

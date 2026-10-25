@@ -13,6 +13,7 @@ from typing import Protocol
 
 import httpx
 
+from .endpoints import endpoint
 from .foods import parse_meal_text
 from .schemas import Turn, UserContext
 
@@ -89,7 +90,14 @@ def _context_line(context: UserContext) -> str:
     )
 
 
-class LocalProvider:
+class _NoRepr:
+    """Providers hold an API key, so make sure it can never leak through a log line or traceback."""
+
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__}>"
+
+
+class LocalProvider(_NoRepr):
     """No network, no key. Rule-based, so the app works offline and in tests."""
     name = "local"
 
@@ -110,7 +118,7 @@ class LocalProvider:
         return Interpretation(reply="I can log meals and set reminders. Try: log two rotis and a cup of dal.")
 
 
-class AnthropicProvider:
+class AnthropicProvider(_NoRepr):
     name = "anthropic"
 
     def __init__(self, api_key: str, model: str | None = None, client: httpx.AsyncClient | None = None):
@@ -129,7 +137,7 @@ class AnthropicProvider:
             "messages": messages,
         }
         r = await self.client.post(
-            "https://api.anthropic.com/v1/messages",
+            endpoint("anthropic", "https://api.anthropic.com/v1/messages"),
             headers={"x-api-key": self.api_key, "anthropic-version": "2023-06-01"},
             json=body,
         )
@@ -143,7 +151,7 @@ class AnthropicProvider:
         return out
 
 
-class OpenAIProvider:
+class OpenAIProvider(_NoRepr):
     name = "openai"
 
     def __init__(self, api_key: str, model: str | None = None, client: httpx.AsyncClient | None = None):
@@ -156,7 +164,7 @@ class OpenAIProvider:
         messages += [{"role": t.role, "content": t.text} for t in history]
         messages.append({"role": "user", "content": text})
         r = await self.client.post(
-            "https://api.openai.com/v1/chat/completions",
+            endpoint("openai", "https://api.openai.com/v1/chat/completions"),
             headers={"Authorization": f"Bearer {self.api_key}"},
             json={
                 "model": self.model,
@@ -172,7 +180,7 @@ class OpenAIProvider:
         return out
 
 
-class GeminiProvider:
+class GeminiProvider(_NoRepr):
     name = "gemini"
 
     def __init__(self, api_key: str, model: str | None = None, client: httpx.AsyncClient | None = None):
@@ -187,7 +195,7 @@ class GeminiProvider:
         ]
         contents.append({"role": "user", "parts": [{"text": text}]})
         r = await self.client.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent",
+            endpoint("gemini", f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"),
             headers={"x-goog-api-key": self.api_key},
             json={
                 "systemInstruction": {"parts": [{"text": f"{SYSTEM_PROMPT}\n{_context_line(context)}"}]},
@@ -207,6 +215,13 @@ class GeminiProvider:
         return out
 
 
+PROVIDER_CLASSES = {"anthropic": AnthropicProvider, "openai": OpenAIProvider, "gemini": GeminiProvider}
+
+
+def build_provider(name: str, api_key: str, client: httpx.AsyncClient | None = None) -> Provider:
+    return PROVIDER_CLASSES[name](api_key, client=client)
+
+
 def configured_providers() -> list[str]:
     """Providers the server has an API key for. 'local' is always available."""
     names = [n for n, var in (("anthropic", "ANTHROPIC_API_KEY"), ("openai", "OPENAI_API_KEY"),
@@ -214,7 +229,7 @@ def configured_providers() -> list[str]:
     return names + ["local"]
 
 
-def get_provider(name: str | None = None) -> Provider:
+def get_provider(name: str | None = None, client: httpx.AsyncClient | None = None) -> Provider:
     """Pick the provider from PULSE_PROVIDER; fall back to local without a key."""
     name = (name or os.environ.get("PULSE_PROVIDER", "")).lower()
     keys = {
@@ -224,5 +239,5 @@ def get_provider(name: str | None = None) -> Provider:
     }
     classes = {"anthropic": AnthropicProvider, "openai": OpenAIProvider, "gemini": GeminiProvider}
     if name in classes and keys[name]:
-        return classes[name](keys[name])
+        return classes[name](keys[name], client=client)
     return LocalProvider()

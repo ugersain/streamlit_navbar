@@ -49,3 +49,4 @@ class AssistResponse(BaseModel):
     reply: str
     actions: list[Action]
     provider: str
+    notice: str | None = None     # for example: your API key was rejected
