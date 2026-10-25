@@ -1,0 +1,1022 @@
+{
+ "note": "Approximate per-serving estimates. Brand and preparation vary.",
+ "recipes": [
+  {
+   "id": "oats-banana",
+   "name": "Banana oats with almonds",
+   "meals": [
+    "breakfast"
+   ],
+   "diet": "vegan",
+   "allergens": [
+    "gluten",
+    "tree nuts"
+   ],
+   "minutes": 8,
+   "kcal": 380,
+   "protein": 13,
+   "carbs": 60,
+   "fat": 10,
+   "cuisine": "Global",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "rolled oats",
+     "qty": 50,
+     "unit": "g"
+    },
+    {
+     "name": "banana",
+     "qty": 1,
+     "unit": "piece"
+    },
+    {
+     "name": "almonds",
+     "qty": 10,
+     "unit": "g"
+    },
+    {
+     "name": "soy milk",
+     "qty": 200,
+     "unit": "ml"
+    }
+   ],
+   "steps": [
+    "Simmer oats in the milk for 5 minutes.",
+    "Top with sliced banana and chopped almonds."
+   ]
+  },
+  {
+   "id": "poha",
+   "name": "Vegetable poha",
+   "meals": [
+    "breakfast"
+   ],
+   "diet": "vegan",
+   "allergens": [
+    "peanuts"
+   ],
+   "minutes": 20,
+   "kcal": 330,
+   "protein": 8,
+   "carbs": 52,
+   "fat": 10,
+   "cuisine": "North Indian",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "flattened rice (poha)",
+     "qty": 60,
+     "unit": "g"
+    },
+    {
+     "name": "onion",
+     "qty": 0.5,
+     "unit": "piece"
+    },
+    {
+     "name": "peanuts",
+     "qty": 15,
+     "unit": "g"
+    },
+    {
+     "name": "turmeric",
+     "qty": 1,
+     "unit": "tsp"
+    },
+    {
+     "name": "lemon",
+     "qty": 0.5,
+     "unit": "piece"
+    }
+   ],
+   "steps": [
+    "Rinse poha and drain.",
+    "Temper mustard seeds, onion, peanuts and turmeric.",
+    "Fold in poha, finish with lemon."
+   ]
+  },
+  {
+   "id": "moong-chilla",
+   "name": "Moong dal chilla with mint curd",
+   "meals": [
+    "breakfast",
+    "lunch"
+   ],
+   "diet": "vegetarian",
+   "allergens": [
+    "dairy"
+   ],
+   "minutes": 20,
+   "kcal": 380,
+   "protein": 24,
+   "carbs": 45,
+   "fat": 10,
+   "cuisine": "North Indian",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "moong dal",
+     "qty": 60,
+     "unit": "g"
+    },
+    {
+     "name": "curd",
+     "qty": 100,
+     "unit": "g"
+    },
+    {
+     "name": "onion",
+     "qty": 0.5,
+     "unit": "piece"
+    },
+    {
+     "name": "mint",
+     "qty": 5,
+     "unit": "g"
+    }
+   ],
+   "steps": [
+    "Soak and blend dal into a batter.",
+    "Cook thin pancakes on a hot pan.",
+    "Serve with mint curd."
+   ]
+  },
+  {
+   "id": "egg-toast",
+   "name": "Masala omelette with toast",
+   "meals": [
+    "breakfast"
+   ],
+   "diet": "eggetarian",
+   "allergens": [
+    "eggs",
+    "gluten"
+   ],
+   "minutes": 12,
+   "kcal": 340,
+   "protein": 20,
+   "carbs": 24,
+   "fat": 17,
+   "cuisine": "Indian",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "eggs",
+     "qty": 2,
+     "unit": "piece"
+    },
+    {
+     "name": "bread",
+     "qty": 2,
+     "unit": "slice"
+    },
+    {
+     "name": "onion",
+     "qty": 0.25,
+     "unit": "piece"
+    },
+    {
+     "name": "green chilli",
+     "qty": 1,
+     "unit": "piece"
+    }
+   ],
+   "steps": [
+    "Whisk eggs with onion and chilli.",
+    "Cook omelette, serve with toast."
+   ]
+  },
+  {
+   "id": "idli-sambar",
+   "name": "Idli with sambar",
+   "meals": [
+    "breakfast"
+   ],
+   "diet": "vegan",
+   "allergens": [],
+   "minutes": 25,
+   "kcal": 300,
+   "protein": 10,
+   "carbs": 58,
+   "fat": 3,
+   "cuisine": "South Indian",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "idli",
+     "qty": 4,
+     "unit": "piece"
+    },
+    {
+     "name": "sambar",
+     "qty": 200,
+     "unit": "ml"
+    }
+   ],
+   "steps": [
+    "Steam idlis until soft.",
+    "Serve hot with sambar."
+   ]
+  },
+  {
+   "id": "greek-yogurt-bowl",
+   "name": "Greek yogurt berry bowl",
+   "meals": [
+    "breakfast",
+    "snack"
+   ],
+   "diet": "vegetarian",
+   "allergens": [
+    "dairy",
+    "tree nuts"
+   ],
+   "minutes": 5,
+   "kcal": 260,
+   "protein": 22,
+   "carbs": 26,
+   "fat": 8,
+   "cuisine": "Global",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "greek yogurt",
+     "qty": 170,
+     "unit": "g"
+    },
+    {
+     "name": "mixed berries",
+     "qty": 80,
+     "unit": "g"
+    },
+    {
+     "name": "almonds",
+     "qty": 10,
+     "unit": "g"
+    },
+    {
+     "name": "honey",
+     "qty": 1,
+     "unit": "tsp"
+    }
+   ],
+   "steps": [
+    "Spoon yogurt into a bowl.",
+    "Top with berries, almonds and honey."
+   ]
+  },
+  {
+   "id": "protein-smoothie",
+   "name": "Banana protein smoothie",
+   "meals": [
+    "breakfast",
+    "snack"
+   ],
+   "diet": "vegetarian",
+   "allergens": [
+    "dairy"
+   ],
+   "minutes": 5,
+   "kcal": 290,
+   "protein": 28,
+   "carbs": 32,
+   "fat": 5,
+   "cuisine": "Global",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "whey protein",
+     "qty": 1,
+     "unit": "scoop"
+    },
+    {
+     "name": "banana",
+     "qty": 1,
+     "unit": "piece"
+    },
+    {
+     "name": "milk",
+     "qty": 250,
+     "unit": "ml"
+    }
+   ],
+   "steps": [
+    "Blend everything until smooth."
+   ]
+  },
+  {
+   "id": "paneer-chickpea-bowl",
+   "name": "Paneer and chickpea bowl",
+   "meals": [
+    "lunch",
+    "dinner"
+   ],
+   "diet": "vegetarian",
+   "allergens": [
+    "dairy"
+   ],
+   "minutes": 25,
+   "kcal": 520,
+   "protein": 34,
+   "carbs": 48,
+   "fat": 20,
+   "cuisine": "Indian",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "paneer",
+     "qty": 100,
+     "unit": "g"
+    },
+    {
+     "name": "chickpeas (cooked)",
+     "qty": 120,
+     "unit": "g"
+    },
+    {
+     "name": "brown rice (cooked)",
+     "qty": 100,
+     "unit": "g"
+    },
+    {
+     "name": "cucumber",
+     "qty": 0.5,
+     "unit": "piece"
+    },
+    {
+     "name": "lemon",
+     "qty": 0.5,
+     "unit": "piece"
+    }
+   ],
+   "steps": [
+    "Pan-sear paneer cubes.",
+    "Toss with chickpeas, cucumber and lemon.",
+    "Serve over rice."
+   ]
+  },
+  {
+   "id": "dal-rice",
+   "name": "Dal tadka with rice and salad",
+   "meals": [
+    "lunch",
+    "dinner"
+   ],
+   "diet": "vegan",
+   "allergens": [],
+   "minutes": 30,
+   "kcal": 480,
+   "protein": 18,
+   "carbs": 82,
+   "fat": 8,
+   "cuisine": "North Indian",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "toor dal",
+     "qty": 70,
+     "unit": "g"
+    },
+    {
+     "name": "rice",
+     "qty": 75,
+     "unit": "g"
+    },
+    {
+     "name": "tomato",
+     "qty": 1,
+     "unit": "piece"
+    },
+    {
+     "name": "cumin",
+     "qty": 1,
+     "unit": "tsp"
+    },
+    {
+     "name": "cucumber",
+     "qty": 0.5,
+     "unit": "piece"
+    }
+   ],
+   "steps": [
+    "Pressure cook dal until soft.",
+    "Temper with cumin, garlic and tomato.",
+    "Serve with rice and salad."
+   ]
+  },
+  {
+   "id": "rajma-bowl",
+   "name": "Rajma rice bowl",
+   "meals": [
+    "lunch",
+    "dinner"
+   ],
+   "diet": "vegan",
+   "allergens": [],
+   "minutes": 35,
+   "kcal": 500,
+   "protein": 19,
+   "carbs": 88,
+   "fat": 7,
+   "cuisine": "North Indian",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "kidney beans (cooked)",
+     "qty": 150,
+     "unit": "g"
+    },
+    {
+     "name": "rice",
+     "qty": 75,
+     "unit": "g"
+    },
+    {
+     "name": "tomato",
+     "qty": 2,
+     "unit": "piece"
+    },
+    {
+     "name": "onion",
+     "qty": 1,
+     "unit": "piece"
+    }
+   ],
+   "steps": [
+    "Simmer beans with onion-tomato masala.",
+    "Serve over rice."
+   ]
+  },
+  {
+   "id": "khichdi",
+   "name": "Vegetable khichdi",
+   "meals": [
+    "lunch",
+    "dinner"
+   ],
+   "diet": "vegan",
+   "allergens": [],
+   "minutes": 30,
+   "kcal": 440,
+   "protein": 16,
+   "carbs": 76,
+   "fat": 7,
+   "cuisine": "Indian",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "rice",
+     "qty": 50,
+     "unit": "g"
+    },
+    {
+     "name": "moong dal",
+     "qty": 40,
+     "unit": "g"
+    },
+    {
+     "name": "mixed vegetables",
+     "qty": 100,
+     "unit": "g"
+    },
+    {
+     "name": "turmeric",
+     "qty": 1,
+     "unit": "tsp"
+    }
+   ],
+   "steps": [
+    "Cook rice, dal and vegetables together until soft.",
+    "Season and serve warm."
+   ]
+  },
+  {
+   "id": "tofu-spinach-curry",
+   "name": "Tofu and spinach curry with rice",
+   "meals": [
+    "lunch",
+    "dinner"
+   ],
+   "diet": "vegan",
+   "allergens": [
+    "soy"
+   ],
+   "minutes": 25,
+   "kcal": 480,
+   "protein": 30,
+   "carbs": 52,
+   "fat": 16,
+   "cuisine": "Indian",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "firm tofu",
+     "qty": 150,
+     "unit": "g"
+    },
+    {
+     "name": "spinach",
+     "qty": 100,
+     "unit": "g"
+    },
+    {
+     "name": "rice",
+     "qty": 75,
+     "unit": "g"
+    },
+    {
+     "name": "onion",
+     "qty": 1,
+     "unit": "piece"
+    },
+    {
+     "name": "tomato",
+     "qty": 1,
+     "unit": "piece"
+    }
+   ],
+   "steps": [
+    "Cook onion and tomato into a masala.",
+    "Add tofu and spinach, simmer 8 minutes.",
+    "Serve with rice."
+   ]
+  },
+  {
+   "id": "roti-sabzi",
+   "name": "Two rotis with mixed vegetable sabzi and curd",
+   "meals": [
+    "lunch",
+    "dinner"
+   ],
+   "diet": "vegetarian",
+   "allergens": [
+    "gluten",
+    "dairy"
+   ],
+   "minutes": 30,
+   "kcal": 470,
+   "protein": 16,
+   "carbs": 66,
+   "fat": 15,
+   "cuisine": "North Indian",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "roti",
+     "qty": 2,
+     "unit": "piece"
+    },
+    {
+     "name": "mixed vegetables",
+     "qty": 150,
+     "unit": "g"
+    },
+    {
+     "name": "curd",
+     "qty": 100,
+     "unit": "g"
+    }
+   ],
+   "steps": [
+    "Cook vegetables with spices until tender.",
+    "Serve with warm rotis and curd."
+   ]
+  },
+  {
+   "id": "quinoa-veg-pulao",
+   "name": "Quinoa vegetable pulao",
+   "meals": [
+    "lunch",
+    "dinner"
+   ],
+   "diet": "vegan",
+   "allergens": [],
+   "minutes": 30,
+   "kcal": 440,
+   "protein": 15,
+   "carbs": 70,
+   "fat": 10,
+   "cuisine": "Global",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "quinoa",
+     "qty": 70,
+     "unit": "g"
+    },
+    {
+     "name": "mixed vegetables",
+     "qty": 120,
+     "unit": "g"
+    },
+    {
+     "name": "peas",
+     "qty": 40,
+     "unit": "g"
+    }
+   ],
+   "steps": [
+    "Saut\u00e9 vegetables with whole spices.",
+    "Add rinsed quinoa and water, cook 15 minutes."
+   ]
+  },
+  {
+   "id": "chicken-rice",
+   "name": "Grilled chicken with rice and vegetables",
+   "meals": [
+    "lunch",
+    "dinner"
+   ],
+   "diet": "non-vegetarian",
+   "allergens": [],
+   "minutes": 30,
+   "kcal": 540,
+   "protein": 46,
+   "carbs": 55,
+   "fat": 11,
+   "cuisine": "Global",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "chicken breast",
+     "qty": 150,
+     "unit": "g"
+    },
+    {
+     "name": "rice",
+     "qty": 75,
+     "unit": "g"
+    },
+    {
+     "name": "broccoli",
+     "qty": 100,
+     "unit": "g"
+    }
+   ],
+   "steps": [
+    "Season and grill the chicken.",
+    "Steam broccoli.",
+    "Serve with rice."
+   ]
+  },
+  {
+   "id": "egg-curry",
+   "name": "Egg curry with two rotis",
+   "meals": [
+    "lunch",
+    "dinner"
+   ],
+   "diet": "eggetarian",
+   "allergens": [
+    "eggs",
+    "gluten"
+   ],
+   "minutes": 30,
+   "kcal": 520,
+   "protein": 27,
+   "carbs": 52,
+   "fat": 22,
+   "cuisine": "Indian",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "eggs",
+     "qty": 3,
+     "unit": "piece"
+    },
+    {
+     "name": "roti",
+     "qty": 2,
+     "unit": "piece"
+    },
+    {
+     "name": "onion",
+     "qty": 1,
+     "unit": "piece"
+    },
+    {
+     "name": "tomato",
+     "qty": 2,
+     "unit": "piece"
+    }
+   ],
+   "steps": [
+    "Boil the eggs.",
+    "Simmer in onion-tomato masala.",
+    "Serve with rotis."
+   ]
+  },
+  {
+   "id": "fish-curry",
+   "name": "Fish curry with rice",
+   "meals": [
+    "dinner"
+   ],
+   "diet": "non-vegetarian",
+   "allergens": [
+    "fish"
+   ],
+   "minutes": 35,
+   "kcal": 510,
+   "protein": 38,
+   "carbs": 56,
+   "fat": 14,
+   "cuisine": "South Indian",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "white fish fillet",
+     "qty": 150,
+     "unit": "g"
+    },
+    {
+     "name": "rice",
+     "qty": 75,
+     "unit": "g"
+    },
+    {
+     "name": "coconut milk",
+     "qty": 60,
+     "unit": "ml"
+    },
+    {
+     "name": "tomato",
+     "qty": 1,
+     "unit": "piece"
+    }
+   ],
+   "steps": [
+    "Simmer fish gently in the coconut and tomato gravy.",
+    "Serve with rice."
+   ]
+  },
+  {
+   "id": "lentil-soup",
+   "name": "Lentil soup with toast",
+   "meals": [
+    "dinner"
+   ],
+   "diet": "vegan",
+   "allergens": [
+    "gluten"
+   ],
+   "minutes": 30,
+   "kcal": 380,
+   "protein": 20,
+   "carbs": 60,
+   "fat": 6,
+   "cuisine": "Global",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "red lentils",
+     "qty": 70,
+     "unit": "g"
+    },
+    {
+     "name": "carrot",
+     "qty": 1,
+     "unit": "piece"
+    },
+    {
+     "name": "bread",
+     "qty": 1,
+     "unit": "slice"
+    }
+   ],
+   "steps": [
+    "Simmer lentils with carrot and spices until soft.",
+    "Blend lightly and serve with toast."
+   ]
+  },
+  {
+   "id": "veg-stir-fry",
+   "name": "Tofu vegetable stir-fry",
+   "meals": [
+    "dinner"
+   ],
+   "diet": "vegan",
+   "allergens": [
+    "soy",
+    "gluten"
+   ],
+   "minutes": 20,
+   "kcal": 420,
+   "protein": 24,
+   "carbs": 40,
+   "fat": 17,
+   "cuisine": "Asian",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "firm tofu",
+     "qty": 120,
+     "unit": "g"
+    },
+    {
+     "name": "mixed vegetables",
+     "qty": 200,
+     "unit": "g"
+    },
+    {
+     "name": "soy sauce",
+     "qty": 1,
+     "unit": "tbsp"
+    },
+    {
+     "name": "rice",
+     "qty": 50,
+     "unit": "g"
+    }
+   ],
+   "steps": [
+    "Stir-fry tofu until golden.",
+    "Add vegetables and sauce, toss on high heat.",
+    "Serve with rice."
+   ]
+  },
+  {
+   "id": "chana-chaat",
+   "name": "Chana chaat",
+   "meals": [
+    "snack"
+   ],
+   "diet": "vegan",
+   "allergens": [],
+   "minutes": 10,
+   "kcal": 210,
+   "protein": 11,
+   "carbs": 34,
+   "fat": 4,
+   "cuisine": "North Indian",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "chickpeas (cooked)",
+     "qty": 120,
+     "unit": "g"
+    },
+    {
+     "name": "onion",
+     "qty": 0.5,
+     "unit": "piece"
+    },
+    {
+     "name": "tomato",
+     "qty": 0.5,
+     "unit": "piece"
+    },
+    {
+     "name": "lemon",
+     "qty": 0.5,
+     "unit": "piece"
+    }
+   ],
+   "steps": [
+    "Mix chickpeas with onion, tomato and spices.",
+    "Finish with lemon."
+   ]
+  },
+  {
+   "id": "fruit-nuts",
+   "name": "Apple with almonds",
+   "meals": [
+    "snack"
+   ],
+   "diet": "vegan",
+   "allergens": [
+    "tree nuts"
+   ],
+   "minutes": 2,
+   "kcal": 190,
+   "protein": 5,
+   "carbs": 24,
+   "fat": 9,
+   "cuisine": "Global",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "apple",
+     "qty": 1,
+     "unit": "piece"
+    },
+    {
+     "name": "almonds",
+     "qty": 15,
+     "unit": "g"
+    }
+   ],
+   "steps": [
+    "Slice the apple and serve with almonds."
+   ]
+  },
+  {
+   "id": "roasted-makhana",
+   "name": "Roasted makhana",
+   "meals": [
+    "snack"
+   ],
+   "diet": "vegan",
+   "allergens": [
+    "dairy"
+   ],
+   "minutes": 8,
+   "kcal": 150,
+   "protein": 5,
+   "carbs": 26,
+   "fat": 3,
+   "cuisine": "North Indian",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "makhana (fox nuts)",
+     "qty": 30,
+     "unit": "g"
+    },
+    {
+     "name": "ghee",
+     "qty": 1,
+     "unit": "tsp"
+    }
+   ],
+   "steps": [
+    "Roast makhana in ghee until crisp.",
+    "Season with salt and pepper."
+   ]
+  },
+  {
+   "id": "boiled-eggs",
+   "name": "Two boiled eggs",
+   "meals": [
+    "snack"
+   ],
+   "diet": "eggetarian",
+   "allergens": [
+    "eggs"
+   ],
+   "minutes": 12,
+   "kcal": 160,
+   "protein": 13,
+   "carbs": 1,
+   "fat": 11,
+   "cuisine": "Global",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "eggs",
+     "qty": 2,
+     "unit": "piece"
+    }
+   ],
+   "steps": [
+    "Boil eggs for 9 minutes, cool and peel."
+   ]
+  },
+  {
+   "id": "cottage-cheese-wrap",
+   "name": "Paneer wrap",
+   "meals": [
+    "lunch",
+    "snack"
+   ],
+   "diet": "vegetarian",
+   "allergens": [
+    "dairy",
+    "gluten"
+   ],
+   "minutes": 15,
+   "kcal": 430,
+   "protein": 25,
+   "carbs": 40,
+   "fat": 18,
+   "cuisine": "Indian",
+   "servings": 1,
+   "ingredients": [
+    {
+     "name": "paneer",
+     "qty": 80,
+     "unit": "g"
+    },
+    {
+     "name": "roti",
+     "qty": 1,
+     "unit": "piece"
+    },
+    {
+     "name": "onion",
+     "qty": 0.25,
+     "unit": "piece"
+    },
+    {
+     "name": "mint chutney",
+     "qty": 1,
+     "unit": "tbsp"
+    }
+   ],
+   "steps": [
+    "Saut\u00e9 paneer with spices.",
+    "Roll in a roti with onion and chutney."
+   ]
+  }
+ ]
+}

@@ -122,7 +122,10 @@ def parse_meal_text(text: str) -> list[ParsedItem]:
             continue
         tokens = chunk.split()
         quantity: float = 1
-        if tokens and re.fullmatch(r"\d+(\.\d+)?", tokens[0]):
+        if len(tokens) > 1 and tokens[0].lower() in ("a", "an") and tokens[1].lower() == "couple":
+            quantity = 2
+            tokens = tokens[2:]
+        elif tokens and re.fullmatch(r"\d+(\.\d+)?", tokens[0]):
             quantity = float(tokens.pop(0))
         elif tokens and tokens[0].lower() in NUMBER_WORDS:
             quantity = NUMBER_WORDS[tokens.pop(0).lower()]

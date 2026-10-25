@@ -64,7 +64,12 @@ final class AppStore: ObservableObject {
 
     func addMeals(_ meals: [Meal]) { update { $0.meals.append(contentsOf: meals) } }
 
-    func deleteMeal(_ id: UUID) { update { $0.meals.removeAll { $0.id == id } } }
+    func deleteMeal(_ id: UUID) {
+        update {
+            $0.meals.removeAll { $0.id == id }
+            $0.deletedIds.append(id)
+        }
+    }
 
     func setSet(day: UUID, exercise: UUID, set: UUID, weightKg: Double? = nil, reps: Int? = nil, done: Bool? = nil) {
         update { snap in
@@ -121,16 +126,31 @@ final class AppStore: ObservableObject {
     // MARK: - Sync
 
     /// Newer snapshot wins for settings and plans. Meals are merged by id so offline logs
-    /// from either device are never lost. (Deleting a meal on one device while the other is
-    /// offline can resurrect it; tombstones are the planned fix.)
+    /// from either device are never lost. 
     func merge(remote: Snapshot) {
         let remoteWins = remote.updatedAt > snapshot.updatedAt
         var merged = remoteWins ? remote : snapshot
         let known = Set(merged.meals.map(\.id))
         let other = remoteWins ? snapshot.meals : remote.meals
         merged.meals.append(contentsOf: other.filter { !known.contains($0.id) })
+        // Deleted meals stay deleted, whichever device deleted them.
+        let tombstones = Set(snapshot.deletedIds).union(remote.deletedIds)
+        merged.meals.removeAll { tombstones.contains($0.id) }
+        merged.deletedIds = Array(tombstones)
         merged.updatedAt = max(remote.updatedAt, snapshot.updatedAt)
         snapshot = merged
+        persist()
+    }
+
+    /// Replace everything with the account's data (after signing in on a new device).
+    func adopt(_ remote: Snapshot) {
+        snapshot = remote
+        persist()
+        onChange?(snapshot)
+    }
+
+    func acknowledgeSync(of sent: [UUID]) {
+        snapshot.deletedIds.removeAll { sent.contains($0) }
         persist()
     }
 

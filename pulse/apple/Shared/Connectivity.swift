@@ -17,12 +17,20 @@ final class Connectivity: NSObject, WCSessionDelegate {
     func send(_ snapshot: Snapshot) {
         guard WCSession.isSupported(), WCSession.default.activationState == .activated,
               let data = try? JSONEncoder.pulse.encode(snapshot) else { return }
-        try? WCSession.default.updateApplicationContext(["snapshot": data])
+        var context: [String: Any] = ["snapshot": data]
+        #if os(iOS)
+        // Only the iPhone owns the sign-in. It shares the token with the paired Watch over the encrypted link.
+        if let token = Keychain.get("pulse.token") { context["token"] = token }
+        #endif
+        try? WCSession.default.updateApplicationContext(context)
     }
 
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {}
 
     func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
+        #if os(watchOS)
+        Keychain.set(applicationContext["token"] as? String, for: "pulse.token")
+        #endif
         guard let data = applicationContext["snapshot"] as? Data,
               let snapshot = try? JSONDecoder.pulse.decode(Snapshot.self, from: data) else { return }
         DispatchQueue.main.async { self.onSnapshot?(snapshot) }

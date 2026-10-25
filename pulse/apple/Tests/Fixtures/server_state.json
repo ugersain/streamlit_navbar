@@ -1,0 +1,317 @@
+{
+ "profile": {
+  "name": "Aarav",
+  "calorieGoal": 1900,
+  "proteinGoal": 141,
+  "carbsGoal": 214,
+  "fatGoal": 53,
+  "activeGoal": 600,
+  "diet": "Vegetarian",
+  "quietStart": 1350,
+  "quietEnd": 360,
+  "onboarded": true,
+  "timezone": "Asia/Kolkata",
+  "allergies": [
+   "Peanuts"
+  ],
+  "sex": "male",
+  "age": 28,
+  "heightCm": 175.0,
+  "weightKg": 78.5,
+  "targetKg": 72.0,
+  "goal": "lose",
+  "activity": "light",
+  "daysPerWeek": 4,
+  "wakeMinutes": 390,
+  "bedMinutes": 1350,
+  "workoutMinutes": 1110,
+  "aiProvider": ""
+ },
+ "meals": [
+  {
+   "id": "11111111-1111-1111-1111-111111111111",
+   "name": "Roti",
+   "quantity": 2.0,
+   "unit": "piece",
+   "calories": 210,
+   "protein": 6.2,
+   "carbs": 36.0,
+   "fat": 5.0,
+   "date": "2026-10-26T08:15:00Z",
+   "source": "voice"
+  }
+ ],
+ "plan": [
+  {
+   "id": "833AA5CA-ECA0-4E19-B168-7B92CA4BDF74",
+   "weekday": 2,
+   "title": "Upper body",
+   "startMinutes": 1110,
+   "exercises": [
+    {
+     "id": "B3EAE3B9-D666-4B07-87D2-C460F5659528",
+     "name": "Bench press",
+     "restSeconds": 90,
+     "sets": [
+      {
+       "id": "5542814D-1ECF-435B-A69C-DE03B2E95A65",
+       "weightKg": 40.0,
+       "reps": 8,
+       "doneOn": "2026-10-26T13:00:00Z"
+      },
+      {
+       "id": "4A6A9B9D-A899-436D-803F-3EFFCE20143A",
+       "weightKg": 40.0,
+       "reps": 8
+      },
+      {
+       "id": "44A7CAB3-9ADC-412D-B565-17C94278B269",
+       "weightKg": 40.0,
+       "reps": 8
+      },
+      {
+       "id": "F41B7234-CAE5-42D3-8A73-57BCDDB3FA08",
+       "weightKg": 40.0,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "AA9174F8-164C-4C7A-9596-0049C19C5D0A",
+     "name": "Overhead press",
+     "restSeconds": 90,
+     "sets": [
+      {
+       "id": "36A0A669-104D-452D-AAB0-8B299244A321",
+       "weightKg": 25.0,
+       "reps": 10
+      },
+      {
+       "id": "8E469ACC-23F9-41D4-BB7E-3B0971955EC5",
+       "weightKg": 25.0,
+       "reps": 10
+      },
+      {
+       "id": "A35C20FE-3AF6-456C-89AF-A1A4BF2F618E",
+       "weightKg": 25.0,
+       "reps": 10
+      }
+     ]
+    },
+    {
+     "id": "ADDC685E-03CC-49EC-A627-14DE60393838",
+     "name": "Incline dumbbell press",
+     "restSeconds": 90,
+     "sets": [
+      {
+       "id": "CC0A048B-297A-4157-85DE-1A32D352FE93",
+       "weightKg": 14.0,
+       "reps": 10
+      },
+      {
+       "id": "74C0715B-010E-4475-9608-24C9B8DCE445",
+       "weightKg": 14.0,
+       "reps": 10
+      },
+      {
+       "id": "6266ACC5-4FFF-4895-9380-512E3BE5DCDA",
+       "weightKg": 14.0,
+       "reps": 10
+      }
+     ]
+    },
+    {
+     "id": "378AD074-3A16-4D0E-9780-BE0399BF1B2E",
+     "name": "Seated cable row",
+     "restSeconds": 90,
+     "sets": [
+      {
+       "id": "56E5BAC1-56F8-4335-A3F1-C25CF938FC66",
+       "weightKg": 45.0,
+       "reps": 12
+      },
+      {
+       "id": "953B5110-B833-47DB-95E5-34A015E5B8B6",
+       "weightKg": 45.0,
+       "reps": 12
+      },
+      {
+       "id": "C9F24869-1BFD-42D3-94A5-AD35AF0C8260",
+       "weightKg": 45.0,
+       "reps": 12
+      }
+     ]
+    },
+    {
+     "id": "6A9A1B5D-E5EE-4E1E-A311-8280037F2A23",
+     "name": "Triceps pushdown",
+     "restSeconds": 90,
+     "sets": [
+      {
+       "id": "4EB7B6A6-9A1F-488C-B204-BCD912335FE5",
+       "weightKg": 20.0,
+       "reps": 12
+      },
+      {
+       "id": "352095D6-4077-49FF-9EB0-1CDB4E1875C3",
+       "weightKg": 20.0,
+       "reps": 12
+      },
+      {
+       "id": "6FA260A3-51FA-4617-9C56-93ADD6234D17",
+       "weightKg": 20.0,
+       "reps": 12
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "766CBC64-77A7-453D-A3BA-10E05BDD347A",
+   "weekday": 4,
+   "title": "Lower body",
+   "startMinutes": 1110,
+   "exercises": [
+    {
+     "id": "BF9D9CBF-3E4C-4125-87C9-457404F41088",
+     "name": "Back squat",
+     "restSeconds": 90,
+     "sets": [
+      {
+       "id": "EC5EC185-3FFB-4926-92F8-B1EA12666C88",
+       "weightKg": 50,
+       "reps": 8
+      },
+      {
+       "id": "2D39F645-CC56-4E34-9CF6-4119B7928CDD",
+       "weightKg": 50,
+       "reps": 8
+      },
+      {
+       "id": "D1B16B23-96CD-424C-BBD2-3DB2C852B4FB",
+       "weightKg": 50,
+       "reps": 8
+      },
+      {
+       "id": "913A2B5B-F409-428E-864D-B513D8F9870E",
+       "weightKg": 50,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "62E70EBA-340C-4D65-B948-70313717805A",
+     "name": "Romanian deadlift",
+     "restSeconds": 90,
+     "sets": [
+      {
+       "id": "7E7A804A-21DD-4C1D-8E1E-E68A54EB4C15",
+       "weightKg": 50,
+       "reps": 10
+      },
+      {
+       "id": "FCAD7432-E2DB-45D5-829E-954E5C0657A2",
+       "weightKg": 50,
+       "reps": 10
+      },
+      {
+       "id": "69A17C25-36AB-4F49-82E2-2849FE609CF1",
+       "weightKg": 50,
+       "reps": 10
+      }
+     ]
+    },
+    {
+     "id": "60B7F75E-3096-4689-9B28-D8FF688BBA41",
+     "name": "Leg press",
+     "restSeconds": 90,
+     "sets": [
+      {
+       "id": "C20F61DB-5697-421B-AAB8-39897E0B289B",
+       "weightKg": 100,
+       "reps": 12
+      },
+      {
+       "id": "7A0BF343-FC6A-4D7A-B29A-4E6708BC6068",
+       "weightKg": 100,
+       "reps": 12
+      },
+      {
+       "id": "C62DDD85-4DDC-48BC-9296-55DD9851729B",
+       "weightKg": 100,
+       "reps": 12
+      }
+     ]
+    },
+    {
+     "id": "03340F87-97B7-4351-B147-211EDFEA8D88",
+     "name": "Calf raise",
+     "restSeconds": 90,
+     "sets": [
+      {
+       "id": "5ECB8F52-4E6F-4130-81C5-B539032CC087",
+       "weightKg": 40,
+       "reps": 15
+      },
+      {
+       "id": "31B5E0D8-D0EA-461B-BE20-2D0A700F2EEB",
+       "weightKg": 40,
+       "reps": 15
+      },
+      {
+       "id": "DC5F386E-1A28-40AA-A285-91F4A73957D9",
+       "weightKg": 40,
+       "reps": 15
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "reminders": [
+  {
+   "id": "3E9005FE-E020-41B7-AD93-A2E1AF2639B7",
+   "title": "Brush teeth and stretch",
+   "minutes": 395,
+   "lastCompleted": "2026-10-26T01:10:00Z",
+   "oneOff": false
+  },
+  {
+   "id": "D07E886B-B968-43CD-A96B-F898C6061C45",
+   "title": "Breakfast",
+   "minutes": 435,
+   "oneOff": false
+  },
+  {
+   "id": "5A0773C4-A691-423E-9435-6ED66A440790",
+   "title": "Drink water",
+   "minutes": 630,
+   "oneOff": false
+  },
+  {
+   "id": "9C04906C-31AE-4FF1-98B4-E24AA72DD830",
+   "title": "Lunch",
+   "minutes": 780,
+   "oneOff": false
+  },
+  {
+   "id": "B049E41D-6109-49CE-9A9E-D0B208607D05",
+   "title": "Drink water",
+   "minutes": 930,
+   "oneOff": false
+  },
+  {
+   "id": "DF005747-475F-4249-BBE0-38DEA055D737",
+   "title": "Dinner",
+   "minutes": 1170,
+   "oneOff": false
+  },
+  {
+   "id": "DF565F60-81B5-441E-BA3E-D9EDB13EFABC",
+   "title": "Wind down",
+   "minutes": 1320,
+   "oneOff": false
+  }
+ ],
+ "updatedAt": "2026-10-26T13:05:00Z"
+}

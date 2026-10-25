@@ -42,13 +42,11 @@ targets:
         NSHealthShareUsageDescription: Pulse reads your activity and workouts to show your progress.
         NSHealthUpdateUsageDescription: Pulse saves your finished workouts to Apple Health.
         PULSE_API_URL: $(PULSE_API_URL)
-        PULSE_API_TOKEN: $(PULSE_API_TOKEN)
     entitlements:
       path: apple/PulseiOS/Pulse.entitlements
       properties:
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []
-        com.apple.developer.applesignin: [Default]
 
   PulseWatch:
     type: application
@@ -71,7 +69,6 @@ targets:
         NSHealthShareUsageDescription: Pulse reads your heart rate and activity during workouts.
         NSHealthUpdateUsageDescription: Pulse saves your finished workouts to Apple Health.
         PULSE_API_URL: $(PULSE_API_URL)
-        PULSE_API_TOKEN: $(PULSE_API_TOKEN)
     entitlements:
       path: apple/PulseWatch/PulseWatch.entitlements
       properties:
@@ -82,7 +79,10 @@ targets:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - apple/Tests
+      - path: apple/Tests
+        excludes: ["Fixtures/**"]
+      - path: apple/Tests/Fixtures
+        buildPhase: resources
     dependencies:
       - target: Pulse
     settings:

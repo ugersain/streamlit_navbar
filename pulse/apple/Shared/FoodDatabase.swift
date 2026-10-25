@@ -113,7 +113,10 @@ final class FoodDatabase {
             var tokens = chunk.split(separator: " ").map(String.init)
             guard !tokens.isEmpty else { continue }
             var quantity = 1.0
-            if let first = tokens.first, let number = Double(first) {
+            if tokens.count > 1, ["a", "an"].contains(tokens[0].lowercased()), tokens[1].lowercased() == "couple" {
+                quantity = 2
+                tokens.removeFirst(2)
+            } else if let first = tokens.first, let number = Double(first) {
                 quantity = number
                 tokens.removeFirst()
             } else if let first = tokens.first?.lowercased(), let number = Self.numberWords[first] {

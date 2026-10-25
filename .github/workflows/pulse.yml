@@ -20,6 +20,33 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: python -m pytest -q
 
+  web:
+    # Drives the real web app in a browser: sign-up, onboarding, every screen and function.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r pulse/backend/requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save playwright && npx playwright install --with-deps chromium
+      - name: Start the server
+        working-directory: pulse/backend
+        run: |
+          DATABASE_URL=sqlite:////tmp/e2e.db nohup python -m uvicorn app.main:app --port 8000 > /tmp/server.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf localhost:8000/healthz && break; sleep 1; done
+      - name: Run the browser tests
+        working-directory: pulse/web
+        run: NODE_PATH=$GITHUB_WORKSPACE/node_modules node e2e/e2e.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: /tmp/pulse-shots
+
   apple:
     # Xcode only runs on macOS, so the Watch and iPhone apps are compiled and tested here.
     runs-on: macos-15

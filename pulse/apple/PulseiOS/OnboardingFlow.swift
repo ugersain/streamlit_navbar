@@ -1,4 +1,3 @@
-import AuthenticationServices
 import SwiftUI
 
 /// Everything the onboarding questions collect, before it becomes a profile and plan.
@@ -30,8 +29,14 @@ final class OnboardingDraft: ObservableObject {
 struct OnboardingFlow: View {
     @EnvironmentObject private var store: AppStore
     @EnvironmentObject private var health: HealthReader
+    @EnvironmentObject private var cloud: CloudAccount
     @StateObject private var draft = OnboardingDraft()
     @State private var step = 0
+    @State private var email = ""
+    @State private var password = ""
+    @State private var isLogin = false
+    @State private var accountError = ""
+    @State private var working = false
 
     private let lastQuestion = 7   // steps 2...7 show a progress bar
 
@@ -112,26 +117,57 @@ struct OnboardingFlow: View {
     }
 
     private var account: some View {
-        scaffold(title: "Create your account", subtitle: "One account for your Watch, phone and the web.",
-                 buttonTitle: "Continue without an account", buttonColor: Pulse.surfaceRaised,
-                 action: { step += 1 }) {
-            VStack(spacing: 12) {
-                SignInWithAppleButton(.signUp) { request in
-                    request.requestedScopes = [.fullName, .email]
-                } onCompletion: { result in
-                    // Backend verification of the Apple identity token is the next milestone.
-                    // For now a successful sign-in just moves on and keeps data on this device.
-                    if case .success(let auth) = result,
-                       let credential = auth.credential as? ASAuthorizationAppleIDCredential,
-                       let given = credential.fullName?.givenName {
-                        draft.name = given
-                    }
-                    if case .success = result { step += 1 }
+        scaffold(title: isLogin ? "Welcome back" : "Create your account",
+                 subtitle: "One account for your Watch, phone and the web.",
+                 buttonTitle: working ? "Please wait…" : (isLogin ? "Log in" : "Create account"),
+                 buttonColor: Pulse.power, canContinue: !working && email.contains("@") && password.count >= (isLogin ? 1 : 8),
+                 action: { submitAccount() }) {
+            VStack(alignment: .leading, spacing: 14) {
+                label("Email")
+                TextField("you@example.com", text: $email)
+                    .textContentType(.emailAddress).keyboardType(.emailAddress).textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .padding(16).background(Pulse.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                label("Password")
+                SecureField(isLogin ? "Password" : "At least 8 characters", text: $password)
+                    .textContentType(isLogin ? .password : .newPassword)
+                    .padding(16).background(Pulse.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                if !accountError.isEmpty {
+                    Text(accountError).font(.footnote.weight(.semibold)).foregroundColor(.red)
                 }
-                .signInWithAppleButtonStyle(.white)
-                .frame(height: 54)
-                Text("Your data stays on this device until accounts launch. You can export or delete it any time.")
+                Button(isLogin ? "New here? Create an account" : "Already have an account? Log in") {
+                    isLogin.toggle(); accountError = ""
+                }
+                .font(.subheadline.weight(.semibold)).foregroundColor(Pulse.routine)
+                if !cloud.serverConfigured {
+                    Text("This build has no server address, so sign-up is unavailable. You can continue on this device only.")
+                        .font(.footnote).foregroundColor(Pulse.muted)
+                }
+                Button("Continue without an account") { step += 1 }
+                    .font(.subheadline.weight(.semibold)).foregroundColor(Pulse.muted)
+                Text("Without an account your data stays on this device and your Watch.")
                     .font(.footnote).foregroundColor(Pulse.muted)
+            }
+        }
+    }
+
+    private func submitAccount() {
+        working = true
+        accountError = ""
+        Task {
+            do {
+                if isLogin {
+                    try await cloud.login(email: email, password: password)
+                    // An existing account with a finished profile takes over; RootView switches to the app.
+                    if store.profile.onboarded { working = false; return }
+                } else {
+                    try await cloud.signup(email: email, password: password, name: draft.name)
+                }
+                working = false
+                step += 1
+            } catch {
+                working = false
+                accountError = error.localizedDescription
             }
         }
     }

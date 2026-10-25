@@ -75,3 +75,61 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(Set(store.snapshot.meals.map(\.name)), ["Local", "Watch"])
     }
 }
+
+/// The server and the apps must agree on the wire format. The fixture is a real response from /v1/state.
+final class WireFormatTests: XCTestCase {
+    private func fixture() throws -> Data {
+        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "server_state", withExtension: "json"))
+        return try Data(contentsOf: url)
+    }
+
+    func testDecodesARealServerSnapshot() throws {
+        let snapshot = try JSONDecoder.pulse.decode(Snapshot.self, from: try fixture())
+        XCTAssertTrue(snapshot.profile.onboarded)
+        XCTAssertEqual(snapshot.profile.name, "Aarav")
+        XCTAssertEqual(snapshot.profile.allergies, ["Peanuts"])
+        XCTAssertEqual(snapshot.profile.timezone, "Asia/Kolkata")
+        XCTAssertEqual(snapshot.meals.first?.calories, 210)
+        XCTAssertEqual(snapshot.plan.count, 2)
+        XCTAssertNotNil(snapshot.plan[0].exercises[0].sets[0].doneOn)
+        XCTAssertNotNil(snapshot.reminders.first?.lastCompleted)
+        XCTAssertEqual(snapshot.deletedIds, [])        // the server never sends this key
+    }
+
+    func testReEncodedSnapshotKeepsServerKeys() throws {
+        let snapshot = try JSONDecoder.pulse.decode(Snapshot.self, from: try fixture())
+        let data = try JSONEncoder.pulse.encode(snapshot)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        for key in ["profile", "meals", "plan", "reminders", "updatedAt", "deletedIds"] {
+            XCTAssertNotNil(json[key], key)
+        }
+        let meal = try XCTUnwrap((json["meals"] as? [[String: Any]])?.first)
+        XCTAssertEqual(meal["calories"] as? Int, 210)
+        XCTAssertNotNil(meal["date"] as? String)
+    }
+}
+
+@MainActor
+final class TombstoneTests: XCTestCase {
+    func testDeletedMealDoesNotComeBackFromAnotherDevice() {
+        let store = AppStore(fileName: "test-\(UUID().uuidString).json")
+        let meal = Meal(name: "Oops", calories: 400)
+        store.addMeals([meal])
+        var other = Snapshot()
+        other.meals = [meal]
+        other.updatedAt = Date().addingTimeInterval(60)
+        store.deleteMeal(meal.id)
+        store.merge(remote: other)
+        XCTAssertTrue(store.snapshot.meals.isEmpty)
+        XCTAssertEqual(store.snapshot.deletedIds, [meal.id])
+    }
+
+    func testSyncAcknowledgementClearsTombstones() {
+        let store = AppStore(fileName: "test-\(UUID().uuidString).json")
+        let meal = Meal(name: "Oops", calories: 400)
+        store.addMeals([meal])
+        store.deleteMeal(meal.id)
+        store.acknowledgeSync(of: [meal.id])
+        XCTAssertTrue(store.snapshot.deletedIds.isEmpty)
+    }
+}

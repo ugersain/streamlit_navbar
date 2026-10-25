@@ -207,6 +207,13 @@ class GeminiProvider:
         return out
 
 
+def configured_providers() -> list[str]:
+    """Providers the server has an API key for. 'local' is always available."""
+    names = [n for n, var in (("anthropic", "ANTHROPIC_API_KEY"), ("openai", "OPENAI_API_KEY"),
+                              ("gemini", "GEMINI_API_KEY")) if os.environ.get(var)]
+    return names + ["local"]
+
+
 def get_provider(name: str | None = None) -> Provider:
     """Pick the provider from PULSE_PROVIDER; fall back to local without a key."""
     name = (name or os.environ.get("PULSE_PROVIDER", "")).lower()

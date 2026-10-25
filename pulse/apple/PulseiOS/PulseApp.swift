@@ -2,23 +2,38 @@ import SwiftUI
 
 @main
 struct PulseApp: App {
-    @StateObject private var store = AppStore()
+    @StateObject private var store: AppStore
+    @StateObject private var cloud: CloudAccount
     @StateObject private var health = HealthReader()
+    @Environment(\.scenePhase) private var scenePhase
+
+    init() {
+        let store = AppStore()
+        _store = StateObject(wrappedValue: store)
+        _cloud = StateObject(wrappedValue: CloudAccount(store: store))
+    }
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(store)
                 .environmentObject(health)
+                .environmentObject(cloud)
                 .preferredColorScheme(.dark)
                 .tint(Pulse.fuel)
                 .task { await bootstrap() }
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active { Task { await cloud.pull() } }
+                }
         }
     }
 
     @MainActor
     private func bootstrap() async {
-        store.onChange = { Connectivity.shared.send($0) }
+        store.onChange = { [cloud] snapshot in
+            Connectivity.shared.send(snapshot)
+            Task { @MainActor in cloud.schedulePush() }
+        }
         Connectivity.shared.onSnapshot = { [store] remote in
             Task { @MainActor in store.merge(remote: remote) }
         }
@@ -29,6 +44,7 @@ struct PulseApp: App {
                 if action == Notifier.ActionID.snooze { store.snooze(reminder) } else { store.complete(reminder) }
             }
         }
+        await cloud.pull()
         if store.profile.onboarded {
             await health.refresh()
             Connectivity.shared.send(store.snapshot)

@@ -76,6 +76,8 @@ struct RoutineView: View {
 
 struct ProfileView: View {
     @EnvironmentObject private var store: AppStore
+    @EnvironmentObject private var cloud: CloudAccount
+    @State private var confirmDelete = false
 
     var body: some View {
         List {
@@ -89,6 +91,21 @@ struct ProfileView: View {
                     ForEach(["Vegetarian", "Non-vegetarian", "Eggetarian", "Vegan"], id: \.self) { Text($0) }
                 }
             }
+            Section("Account") {
+                if let email = cloud.email {
+                    LabeledContent("Signed in as", value: email)
+                    if cloud.lastSyncFailed {
+                        Text("Couldn't reach the server. Changes will sync when you're back online.")
+                            .font(.footnote).foregroundColor(Pulse.power)
+                    }
+                    Button("Sync now") { Task { await cloud.pushNow() } }
+                    Button("Log out") { cloud.logout() }
+                    Button("Delete account and data", role: .destructive) { confirmDelete = true }
+                } else {
+                    Text("You're using Pulse on this device only. Sign in from onboarding to sync with the web.")
+                        .font(.footnote).foregroundColor(Pulse.muted)
+                }
+            }
             Section("Your data") {
                 Text("Health data stays on your devices. Meals are only sent to the server when you ask the assistant to log them.")
                     .font(.footnote).foregroundColor(Pulse.muted)
@@ -97,6 +114,11 @@ struct ProfileView: View {
         .scrollContentBackground(.hidden)
         .screenBackground()
         .navigationTitle("Profile")
+        .confirmationDialog("Delete your account?", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("Delete everything", role: .destructive) { Task { try? await cloud.deleteRemoteAccount() } }
+        } message: {
+            Text("This permanently deletes your data on the server. It can't be undone.")
+        }
     }
 
     private func bind<T>(_ keyPath: WritableKeyPath<Profile, T>) -> Binding<T> {

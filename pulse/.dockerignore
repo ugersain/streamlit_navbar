@@ -1,0 +1,7 @@
+apple
+**/__pycache__
+**/.pytest_cache
+backend/tests
+web/e2e
+*.db
+.venv

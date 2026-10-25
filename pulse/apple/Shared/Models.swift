@@ -64,6 +64,29 @@ struct Profile: Codable, Hashable {
     var quietStart = 22 * 60 + 30
     var quietEnd = 6 * 60
     var onboarded = false
+    var timezone = TimeZone.current.identifier
+    var allergies: [String] = []
+    var aiProvider = ""
+
+    init() {}
+
+    /// Tolerant decoding: the server may add fields later, and older files lack newer ones.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
+        calorieGoal = try c.decodeIfPresent(Int.self, forKey: .calorieGoal) ?? 2000
+        proteinGoal = try c.decodeIfPresent(Int.self, forKey: .proteinGoal) ?? 120
+        carbsGoal = try c.decodeIfPresent(Int.self, forKey: .carbsGoal) ?? 220
+        fatGoal = try c.decodeIfPresent(Int.self, forKey: .fatGoal) ?? 60
+        activeGoal = try c.decodeIfPresent(Int.self, forKey: .activeGoal) ?? 600
+        diet = try c.decodeIfPresent(String.self, forKey: .diet) ?? "Vegetarian"
+        quietStart = try c.decodeIfPresent(Int.self, forKey: .quietStart) ?? 22 * 60 + 30
+        quietEnd = try c.decodeIfPresent(Int.self, forKey: .quietEnd) ?? 6 * 60
+        onboarded = try c.decodeIfPresent(Bool.self, forKey: .onboarded) ?? false
+        timezone = try c.decodeIfPresent(String.self, forKey: .timezone) ?? TimeZone.current.identifier
+        allergies = try c.decodeIfPresent([String].self, forKey: .allergies) ?? []
+        aiProvider = try c.decodeIfPresent(String.self, forKey: .aiProvider) ?? ""
+    }
 }
 
 struct Snapshot: Codable {
@@ -72,6 +95,20 @@ struct Snapshot: Codable {
     var plan: [WorkoutDay] = []
     var reminders: [Reminder] = []
     var updatedAt = Date.distantPast
+    /// Meals deleted since the last cloud sync, so a stale device cannot bring them back.
+    var deletedIds: [UUID] = []
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        profile = try c.decodeIfPresent(Profile.self, forKey: .profile) ?? Profile()
+        meals = try c.decodeIfPresent([Meal].self, forKey: .meals) ?? []
+        plan = try c.decodeIfPresent([WorkoutDay].self, forKey: .plan) ?? []
+        reminders = try c.decodeIfPresent([Reminder].self, forKey: .reminders) ?? []
+        updatedAt = try c.decodeIfPresent(Date.self, forKey: .updatedAt) ?? .distantPast
+        deletedIds = try c.decodeIfPresent([UUID].self, forKey: .deletedIds) ?? []
+    }
 }
 
 extension JSONEncoder {

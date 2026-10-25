@@ -1,5 +1,4 @@
 // Defaults. Put real values in apple/Secrets.xcconfig (git-ignored).
 // In .xcconfig files "//" starts a comment, so write URLs as https:/$()/host
 PULSE_API_URL =
-PULSE_API_TOKEN =
 #include? "Secrets.xcconfig"

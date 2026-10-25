@@ -101,13 +101,10 @@ struct ResilientAssistant: AssistantProviding {
 }
 
 enum AppConfig {
-    /// URL and token come from Info.plist (filled from Secrets.xcconfig, which is not committed).
-    /// This shared token is for development. Production should use a per-user session token.
+    /// Server address comes from Info.plist (filled from Secrets.xcconfig, not committed).
+    /// The token is the signed-in user's session token, kept in the Keychain.
     static func makeAssistant() -> AssistantProviding {
-        let info = Bundle.main.infoDictionary ?? [:]
-        guard let urlString = info["PULSE_API_URL"] as? String, !urlString.isEmpty,
-              let url = URL(string: urlString),
-              let token = info["PULSE_API_TOKEN"] as? String, !token.isEmpty else {
+        guard let url = CloudClient.configuredURL, let token = Keychain.get("pulse.token") else {
             return ResilientAssistant(remote: nil)
         }
         return ResilientAssistant(remote: RemoteAssistant(baseURL: url, token: token))

@@ -1,76 +1,94 @@
 # Pulse
 
-Personal fitness companion for Apple Watch, iPhone and (planned) web: calorie tracking, gym plan,
-reminders and a voice assistant. Design lives in the "Personal Fitness Companion" canvas.
+Personal fitness companion for Apple Watch, iPhone and web: calorie tracking, gym plan, reminders,
+recipes, weekly meal plan, insights and a voice assistant. One account syncs everything.
 
 ```
 pulse/
-  shared/foods.json      Food database. Used by the backend AND bundled in both apps.
-  backend/               FastAPI service: holds AI keys, talks to Claude / OpenAI / Gemini.
-  apple/Shared/          Swift code shared by iPhone and Watch (models, store, sync, assistant).
-  apple/PulseWatch/      Apple Watch app (SwiftUI, watchOS 10).
-  apple/PulseiOS/        iPhone app (SwiftUI, iOS 17).
-  apple/Tests/           Unit tests.
-  project.yml            XcodeGen spec. The .xcodeproj is generated, not committed.
+  backend/        FastAPI service: accounts, sync, plans, recipes, insights, calendar feed, AI assistant
+  web/            The web app (plain JavaScript, no build step). Served by the backend at "/".
+  shared/         foods.json and recipes.json, used by the backend AND bundled in the apps
+  apple/Shared/   Swift code shared by iPhone and Watch (models, store, sync, assistant)
+  apple/PulseWatch/  Apple Watch app (SwiftUI, watchOS 10)
+  apple/PulseiOS/    iPhone app (SwiftUI, iOS 17)
+  project.yml     XcodeGen spec. The .xcodeproj is generated, not committed.
+  Dockerfile, render.yaml   Deployment
 ```
 
-## What works today
+## What is built and how it is tested
 
-| Area | State |
-| --- | --- |
-| Backend `/v1/assist` (Claude, OpenAI, Gemini, local fallback) | Built, 12 tests pass |
-| Voice food logging: AI reads *what* you said, the database supplies the numbers | Built |
-| Watch: Home, Workout (crown, rest timer, HealthKit session), Assistant, Routine | Written, **not yet compiled** |
-| iPhone: Onboarding, Today, Food, Train, Routine, Profile, Siri-style assistant | Written, **not yet compiled** |
-| iPhone to Watch sync (WatchConnectivity, latest snapshot + meal merge) | Written, not yet run on devices |
+| Area | State | How it is tested |
+| --- | --- | --- |
+| Accounts: sign up, log in, log out, delete account, data export | Done | 77 API tests + browser tests |
+| Cloud sync (newer settings win, meals merge, deletes stick) | Done | API tests, including same-second edits and stale devices |
+| Plan builder, workout split, routine from onboarding answers | Done | Unit + API tests |
+| Voice/text food logging (AI reads what you said, a database supplies the numbers) | Done | Parser and provider tests; Claude, OpenAI and Gemini adapters tested against mock servers |
+| Recipes, weekly meal plan, shopping list (never suggests your allergens) | Done | API tests |
+| Insights (calories, protein, training, habits), calendar feed (.ics) | Done | API tests |
+| Web app: every screen in the design | Done | 45-step browser test (`web/e2e/e2e.cjs`) |
+| Apple Watch app (40 mm to 49 mm), iPhone app | Written, **not yet compiled** | CI builds and tests them on a Mac (`.github/workflows/pulse.yml`) |
 
-The Swift code was written without access to Xcode, so expect a few compile fixes on first build.
-The GitHub Actions workflow `.github/workflows/pulse.yml` builds both apps on a macOS runner, so every
-push tells you exactly what to fix.
+The Swift code was written without Xcode available, so expect a few compile fixes on the first build.
+Real speech recognition, HealthKit, notifications and WatchConnectivity can only be checked on devices.
 
-## Apple Watch sizes
-
-Supports every size from 40 mm (162 pt wide) to 49 mm (Ultra). `WatchMetrics` scales graphics from a 198 pt
-baseline, text uses Dynamic Type styles, every screen scrolls, and the rings/stats switch to a stacked layout
-when space is tight. Open `WatchPreviews.swift` in Xcode to see Home, Assistant and Workout on 40, 41, 45 and 49 mm.
-
-## Run the backend
+## Run it locally
 
 ```bash
 cd pulse/backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
-python -m pytest -q
+python -m pytest -q                           # backend tests
 
-export PULSE_API_TOKEN=choose-a-long-random-string
-export PULSE_PROVIDER=anthropic          # or openai, gemini; omit for the offline rule-based mode
-export ANTHROPIC_API_KEY=...             # OPENAI_API_KEY / GEMINI_API_KEY for the others
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+# optional: a real AI provider. Without a key the built-in parser answers.
+export PULSE_PROVIDER=anthropic ANTHROPIC_API_KEY=...     # or openai / gemini
+uvicorn app.main:app --port 8000
 ```
 
-Without a provider key the server answers using the built-in parser, so the apps still work.
+Open http://localhost:8000, create an account and go through onboarding.
+
+Browser tests (needs the server running and `npm i playwright`):
+
+```bash
+cd pulse/web && node e2e/e2e.cjs
+```
+
+## Deploy
+
+`render.yaml` is a Render blueprint (web service from the Dockerfile plus a free Postgres). Or:
+
+```bash
+cd pulse && docker build -t pulse .
+docker run -p 8000:8000 -e DATABASE_URL=postgresql://... -e PULSE_PROVIDER=anthropic -e ANTHROPIC_API_KEY=... pulse
+```
+
+Set `DATABASE_URL` to Postgres for anything real: SQLite on a host with a temporary disk loses data on restart.
+API keys live only on the server, never in the apps or the web page.
 
 ## Build the apps (on a Mac)
 
 ```bash
 brew install xcodegen
 cd pulse
-cp apple/Secrets.example.xcconfig apple/Secrets.xcconfig   # fill in your server URL and token
-xcodegen generate
-open Pulse.xcodeproj
+cp apple/Secrets.example.xcconfig apple/Secrets.xcconfig   # your server address
+xcodegen generate && open Pulse.xcodeproj
 ```
 
-In `project.yml` change `bundleIdPrefix`/bundle ids and set `DEVELOPMENT_TEAM`. Run the **Pulse** scheme on an
-iPhone; the Watch app installs with it. Enable the HealthKit and Sign in with Apple capabilities for your team.
+Change the bundle ids in `project.yml` and set your Apple Developer team. A free Apple ID works for running on
+your own devices (the app expires after 7 days). The Watch app installs with the iPhone app.
 
-## Known gaps (next milestones)
+## Apple Watch sizes
 
-- **Accounts:** "Sign in with Apple" is wired in the UI but not verified by a server yet. The app token is a shared
-  development secret; production needs per-user sessions.
-- **Watch voice:** watchOS has no speech recognizer, so the Watch uses the system dictation sheet. The custom
-  listening screen from the design is iPhone-only until audio is sent to the server for transcription.
-- **Sync deletes:** deleting a meal while the other device is offline can bring it back (needs tombstones).
-- **Watch standalone reminders:** daily reminders are scheduled by the iPhone and mirrored to the Watch.
-- **Not started:** web app, recipes, calendar events, shopping list, complications, data export/delete.
+Works on every size from 40 mm (162 pt wide) to 49 mm. `WatchMetrics` scales graphics from a 198 pt baseline,
+text uses Dynamic Type, every screen scrolls and the rings switch to a stacked layout when space is tight.
+Open `WatchPreviews.swift` in Xcode to see Home, Assistant and Workout on 40, 41, 45 and 49 mm.
+
+## Known limits
+
+- **Sign in with Apple and Google** are not included yet; accounts use email and password.
+- **Watch voice:** watchOS has no speech recognizer, so the Watch uses the system dictation sheet.
+- **Active energy** comes from Apple Health on the iPhone and Watch; the web app cannot show it.
+- **Web voice** uses the browser's speech recognition where available (Chrome, Edge, Safari); other browsers can type.
+- **No password reset email yet.** Needs an email provider.
+- **Single server instance:** the login rate limiter is in memory.
 
 Nutrition numbers are estimates. This app gives general guidance, not medical advice.
