@@ -1,0 +1,43 @@
+name: Pulse
+
+on:
+  push:
+    paths: ["pulse/**", ".github/workflows/pulse.yml"]
+  pull_request:
+    paths: ["pulse/**", ".github/workflows/pulse.yml"]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pulse/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest -q
+
+  apple:
+    # Xcode only runs on macOS, so the Watch and iPhone apps are compiled and tested here.
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: pulse
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate the Xcode project
+        run: xcodegen generate
+      - name: Build the Apple Watch app (simulator)
+        run: |
+          xcodebuild build -project Pulse.xcodeproj -scheme PulseWatch \
+            -destination 'generic/platform=watchOS Simulator' CODE_SIGNING_ALLOWED=NO
+      - name: Build and test the iPhone app (with the Watch app embedded)
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in d.items() if 'iOS' in k for x in v if 'iPhone' in x['name']))")
+          xcodebuild test -project Pulse.xcodeproj -scheme Pulse \
+            -destination "id=$UDID" CODE_SIGNING_ALLOWED=NO

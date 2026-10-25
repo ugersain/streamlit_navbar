@@ -1,0 +1,13 @@
+# Xcode / XcodeGen
+*.xcodeproj
+xcuserdata/
+DerivedData/
+build/
+Info.plist
+*.entitlements
+apple/Secrets.xcconfig
+# Python
+__pycache__/
+.pytest_cache/
+.venv/
+.env
