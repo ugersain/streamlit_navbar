@@ -1,0 +1,90 @@
+scrHome As screen:
+    Fill: =RGBA(245, 247, 250, 1)
+    OnVisible: =Set(varStatus, ""); Set(varBusy, false)
+
+    lblTitle As label:
+        Text: ="Reports & Weekly Mail"
+        Font: =Font.'Segoe UI'
+        FontWeight: =FontWeight.Bold
+        Size: =24
+        X: =40
+        Y: =24
+        Width: =Parent.Width - 80
+        Height: =48
+
+    lblDate As label:
+        Text: ="Run date for Db2 queries"
+        X: =40
+        Y: =100
+        Width: =300
+        Height: =32
+
+    dpRun As datePicker:
+        DefaultDate: =Today()
+        Format: ="yyyy-mm-dd"
+        X: =40
+        Y: =136
+        Width: =300
+        Height: =44
+
+    btnRunDb2 As button:
+        Text: ="Run Db2 report & email"
+        DisplayMode: =If(varBusy, DisplayMode.Disabled, DisplayMode.Edit)
+        Fill: =RGBA(0, 120, 212, 1)
+        Color: =RGBA(255, 255, 255, 1)
+        X: =40
+        Y: =196
+        Width: =300
+        Height: =48
+        OnSelect: |-
+            =Set(varBusy, true);
+            Set(varStatus, "Running Db2 queries...");
+            IfError(
+                Set(varResult, DB2ReportFlow.Run(Text(dpRun.SelectedDate, "yyyy-mm-dd")));
+                Set(varStatus, "Done: " & varResult.status),
+                Set(varStatus, "Failed: " & FirstError.Message)
+            );
+            Set(varBusy, false)
+
+    lblDivider As label:
+        Text: ="Weekly UAT / SIT calendar mail"
+        FontWeight: =FontWeight.Semibold
+        X: =40
+        Y: =276
+        Width: =400
+        Height: =32
+
+    lblHint As label:
+        Text: ="UAT = locations A, B  |  SIT = locations I, F"
+        Color: =RGBA(96, 96, 96, 1)
+        X: =40
+        Y: =308
+        Width: =400
+        Height: =28
+
+    btnWeekly As button:
+        Text: ="Send weekly UAT/SIT mail"
+        DisplayMode: =If(varBusy, DisplayMode.Disabled, DisplayMode.Edit)
+        Fill: =RGBA(16, 124, 16, 1)
+        Color: =RGBA(255, 255, 255, 1)
+        X: =40
+        Y: =344
+        Width: =300
+        Height: =48
+        OnSelect: |-
+            =Set(varBusy, true);
+            Set(varStatus, "Reading SharePoint calendar...");
+            IfError(
+                Set(varResult, WeeklyCalendarFlow.Run());
+                Set(varStatus, "Done: " & varResult.status),
+                Set(varStatus, "Failed: " & FirstError.Message)
+            );
+            Set(varBusy, false)
+
+    lblStatus As label:
+        Text: =varStatus
+        Color: =If(StartsWith(varStatus, "Failed"), RGBA(200, 0, 0, 1), RGBA(16, 124, 16, 1))
+        X: =40
+        Y: =412
+        Width: =Parent.Width - 80
+        Height: =60
